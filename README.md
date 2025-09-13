@@ -1,5 +1,4 @@
 # CivicSync
-# masterplan.md
 
 ## 1. App Overview & Objectives
 
