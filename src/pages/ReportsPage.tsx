@@ -137,6 +137,18 @@ const ReportsPage: React.FC = () => {
     }
   };
 
+  const closeResolvedModal = (reportId: string) => {
+    // Reset the status dropdown to its previous value when cancelling
+    setShowResolvedModal(prev => ({
+      ...prev,
+      [reportId]: false
+    }));
+    setResolvedPhotos(prev => ({
+      ...prev,
+      [reportId]: null
+    }));
+  };
+
   const handleResolvedSubmit = (reportId: string) => {
     const photo = resolvedPhotos[reportId];
     if (photo) {
@@ -176,17 +188,6 @@ const ReportsPage: React.FC = () => {
     setResolvedPhotos(prev => ({
       ...prev,
       [reportId]: file
-    }));
-  };
-
-  const closeResolvedModal = (reportId: string) => {
-    setShowResolvedModal(prev => ({
-      ...prev,
-      [reportId]: false
-    }));
-    setResolvedPhotos(prev => ({
-      ...prev,
-      [reportId]: null
     }));
   };
 
@@ -435,8 +436,8 @@ const ReportsPage: React.FC = () => {
                       />
                       
                       {/* Dropdown Menu */}
-                      <div className="absolute right-0 top-8 z-20 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-2">
-                        <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700">
+                      <div className="absolute right-0 top-8 z-20 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-2 backdrop-blur-none">
+                        <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700">
                           <p className="text-xs font-medium text-black dark:text-gray-400 uppercase tracking-wider">
                             Assign to Department
                           </p>
@@ -524,7 +525,7 @@ const ReportsPage: React.FC = () => {
                 </label>
                 
                 {!resolvedPhotos[reportId] ? (
-                  <div className="border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg p-6 text-center">
+                  <div className="border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg p-6 text-center relative">
                     <Upload className="h-8 w-8 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                       Click to upload or drag and drop
@@ -536,7 +537,7 @@ const ReportsPage: React.FC = () => {
                         const file = e.target.files?.[0];
                         if (file) handlePhotoUpload(reportId, file);
                       }}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-500">
                       PNG, JPG, JPEG up to 10MB

@@ -92,6 +92,13 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick, isLanding = true }) => {
                 {t('nav.home') || 'Home'}
               </a>
               <a
+                href="#about"
+                onClick={(e) => { e.preventDefault(); scrollToId('about'); }}
+                className="text-sky-100 hover:text-white dark:text-gray-300 dark:hover:text-white transition-colors"
+              >
+                {t('nav.about') || 'About'}
+              </a>
+              <a
                 href="#features"
                 onClick={(e) => { e.preventDefault(); scrollToId('features'); }}
                 className="text-sky-100 hover:text-white dark:text-gray-300 dark:hover:text-white transition-colors"
@@ -104,13 +111,6 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick, isLanding = true }) => {
                 className="text-sky-100 hover:text-white dark:text-gray-300 dark:hover:text-white transition-colors"
               >
                 {t('nav.howItWorks') || 'How it works'}
-              </a>
-              <a
-                href="#about"
-                onClick={(e) => { e.preventDefault(); scrollToId('about'); }}
-                className="text-sky-100 hover:text-white dark:text-gray-300 dark:hover:text-white transition-colors"
-              >
-                {t('nav.about') || 'About'}
               </a>
               {/* Access Dashboard: call the login handler if provided, otherwise scroll to dashboard section */}
               <a

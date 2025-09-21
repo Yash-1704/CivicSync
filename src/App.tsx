@@ -77,7 +77,7 @@ const AppContent: React.FC = () => {
           currentPage={currentPage}
           onPageChange={(page) => setCurrentPage(page as AppPage)}
         />
-        <main className="flex-1 ml-0 md:ml-16 p-6 pt-24">
+        <main className="flex-1 ml-0 md:ml-16 p-6 pt-15">
           <div className="max-w-7xl mx-auto">
             {renderCurrentPage()}
           </div>

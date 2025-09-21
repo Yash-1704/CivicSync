@@ -267,7 +267,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
             {t('landing.cta.title') || "Ready to Transform Your Civic Operations?"}
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            {t('landing.cta.desc') || "Join thousands of government staff using our platform to serve their communities better."}
+            {t('landing.cta.subtitle') || "Join thousands of government staff using our platform to serve their communities better."}
           </p>
           <button
             onClick={onLoginClick}
