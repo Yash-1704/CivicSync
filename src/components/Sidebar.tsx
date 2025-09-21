@@ -27,7 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange }) => {
   ];
 
   const sidebarClasses = `
-    fixed left-0 top-16 h-[calc(100vh-4rem)] bg-slate-900/95 backdrop-blur-md border-r border-slate-800
+    fixed left-0 top-16 h-[calc(100vh-4rem)] bg-sky-600/95 dark:bg-slate-900/95 backdrop-blur-md border-r border-sky-700/30 dark:border-slate-800
     transition-all duration-300 z-40
     ${isExpanded ? 'w-64' : 'w-20'}
     ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
@@ -38,7 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange }) => {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="fixed top-20 left-4 z-50 md:hidden bg-slate-800 text-white p-2 rounded-lg"
+        className="fixed top-20 left-4 z-50 md:hidden bg-sky-700 dark:bg-slate-800 text-white p-2 rounded-lg"
       >
         {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
@@ -72,7 +72,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange }) => {
                 className={`
                   w-full py-2.5 rounded-lg transition-all duration-200
                   ${isExpanded ? 'flex items-center px-3 space-x-3' : 'block'} /* <--- KEY CHANGE HERE */
-                  ${isActive ? 'text-white' : 'text-gray-400 hover:bg-slate-800 hover:text-white'}
+                  ${isActive ? 'text-white' : 'text-sky-100 dark:text-gray-400 hover:bg-sky-500/30 dark:hover:bg-slate-800 hover:text-white'}
                 `}
               >
                 {/* Icon Container */}

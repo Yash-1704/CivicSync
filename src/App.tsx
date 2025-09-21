@@ -10,6 +10,7 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
+import FloatingThemeToggle from './components/FloatingThemeToggle';
 
 type AppPage = 'landing' | 'auth' | 'dashboard' | 'reports' | 'analytics' | 'settings';
 
@@ -33,7 +34,7 @@ const AppContent: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-sky-100 dark:bg-slate-900 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -56,7 +57,7 @@ const AppContent: React.FC = () => {
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <DashboardPage />;
+        return <DashboardPage onNavigate={(page: string) => setCurrentPage(page as AppPage)} />;
       case 'reports':
         return <ReportsPage />;
       case 'analytics':
@@ -64,12 +65,12 @@ const AppContent: React.FC = () => {
       case 'settings':
         return <SettingsPage />;
       default:
-        return <DashboardPage />;
+        return <DashboardPage onNavigate={(page: string) => setCurrentPage(page as AppPage)} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-sky-100 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <Navbar isLanding={false} />
       <div className="flex">
         <Sidebar
@@ -82,6 +83,9 @@ const AppContent: React.FC = () => {
           </div>
         </main>
       </div>
+      
+      {/* Floating Theme Toggle */}
+      <FloatingThemeToggle />
     </div>
   );
 };

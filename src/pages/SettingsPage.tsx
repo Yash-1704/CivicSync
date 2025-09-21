@@ -28,9 +28,9 @@ const SettingsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-        <h1 className="text-3xl font-bold text-white mb-2">{t('settings.title')}</h1>
-        <p className="text-gray-400">
+      <div className="bg-white/80 backdrop-blur-sm dark:bg-slate-800 rounded-xl p-6 border border-blue-100 dark:border-slate-700 shadow-lg">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{t('settings.title')}</h1>
+        <p className="text-gray-600 dark:text-gray-400">
           Manage your account settings and preferences.
         </p>
       </div>
@@ -39,17 +39,17 @@ const SettingsPage: React.FC = () => {
         {/* Profile Settings */}
         <div className="lg:col-span-2 space-y-6">
           {/* Profile Information */}
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <div className="bg-white/80 backdrop-blur-sm dark:bg-slate-800 rounded-xl p-6 border border-blue-100 dark:border-slate-700 shadow-lg">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-blue-600/20 rounded-lg">
-                <User className="h-5 w-5 text-blue-400" />
+              <div className="p-2 bg-blue-50 dark:bg-blue-600/20 rounded-lg">
+                <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
-              <h2 className="text-xl font-semibold text-white">{t('settings.profile')}</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('settings.profile')}</h2>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('settings.name')}
                 </label>
                 <input
@@ -57,13 +57,13 @@ const SettingsPage: React.FC = () => {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-4 py-3 bg-blue-50 dark:bg-slate-700 border border-blue-200 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   placeholder="Enter your full name"
                 />
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('settings.email')}
                 </label>
                 <input
@@ -71,7 +71,7 @@ const SettingsPage: React.FC = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-4 py-3 bg-blue-50 dark:bg-slate-700 border border-blue-200 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   placeholder="Enter your email address"
                 />
               </div>
@@ -79,25 +79,25 @@ const SettingsPage: React.FC = () => {
           </div>
 
           {/* Preferences */}
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <div className="bg-white/80 backdrop-blur-sm dark:bg-slate-800 rounded-xl p-6 border border-blue-100 dark:border-slate-700 shadow-lg">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-purple-600/20 rounded-lg">
-                <Palette className="h-5 w-5 text-purple-400" />
+              <div className="p-2 bg-purple-50 dark:bg-purple-600/20 rounded-lg">
+                <Palette className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
-              <h2 className="text-xl font-semibold text-white">{t('settings.preferences')}</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('settings.preferences')}</h2>
             </div>
 
             <div className="space-y-6">
               {/* Language Setting */}
               <div>
-                <label htmlFor="language" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="language" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('settings.language')}
                 </label>
                 <select
                   id="language"
                   value={language}
                   onChange={(e) => setLanguage(e.target.value as Language)}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-4 py-3 bg-blue-50 dark:bg-slate-700 border border-blue-200 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                 >
                   <option value="en">English 🇺🇸</option>
                   <option value="hi">हिन्दी 🇮🇳</option>
@@ -106,7 +106,7 @@ const SettingsPage: React.FC = () => {
 
               {/* Theme Setting */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                   {t('settings.theme')}
                 </label>
                 <div className="flex space-x-4">
@@ -114,8 +114,8 @@ const SettingsPage: React.FC = () => {
                     onClick={() => !isDarkMode && toggleTheme()}
                     className={`flex items-center space-x-3 px-4 py-3 rounded-lg border transition-colors ${
                       !isDarkMode
-                        ? 'bg-blue-600/20 border-blue-500 text-blue-400'
-                        : 'bg-slate-700 border-slate-600 text-gray-300 hover:border-slate-500'
+                        ? 'bg-blue-100 dark:bg-blue-600/20 border-blue-500 text-blue-600 dark:text-blue-400'
+                        : 'bg-gray-100 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-slate-500'
                     }`}
                   >
                     <div className="w-4 h-4 bg-white rounded-full"></div>
@@ -125,8 +125,8 @@ const SettingsPage: React.FC = () => {
                     onClick={() => isDarkMode && toggleTheme()}
                     className={`flex items-center space-x-3 px-4 py-3 rounded-lg border transition-colors ${
                       isDarkMode
-                        ? 'bg-blue-600/20 border-blue-500 text-blue-400'
-                        : 'bg-slate-700 border-slate-600 text-gray-300 hover:border-slate-500'
+                        ? 'bg-blue-100 dark:bg-blue-600/20 border-blue-500 text-blue-600 dark:text-blue-400'
+                        : 'bg-gray-100 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-slate-500'
                     }`}
                   >
                     <div className="w-4 h-4 bg-slate-800 rounded-full"></div>
@@ -138,19 +138,19 @@ const SettingsPage: React.FC = () => {
           </div>
 
           {/* Notifications */}
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+          <div className="bg-white/80 backdrop-blur-sm dark:bg-slate-800 rounded-xl p-6 border border-blue-100 dark:border-slate-700 shadow-lg">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-green-600/20 rounded-lg">
-                <Bell className="h-5 w-5 text-green-400" />
+              <div className="p-2 bg-green-50 dark:bg-green-600/20 rounded-lg">
+                <Bell className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
-              <h2 className="text-xl font-semibold text-white">{t('settings.notifications')}</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('settings.notifications')}</h2>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-white font-medium">Email Notifications</h3>
-                  <p className="text-gray-400 text-sm">Receive updates via email</p>
+                  <h3 className="text-gray-900 dark:text-white font-medium">Email Notifications</h3>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">Receive updates via email</p>
                 </div>
                 <button
                   onClick={() => setNotifications(!notifications)}
@@ -172,8 +172,8 @@ const SettingsPage: React.FC = () => {
         {/* Sidebar Actions */}
         <div className="space-y-6">
           {/* Quick Actions */}
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-            <h2 className="text-lg font-semibold text-white mb-4">Quick Actions</h2>
+          <div className="bg-white/80 backdrop-blur-sm dark:bg-slate-800 rounded-xl p-6 border border-blue-100 dark:border-slate-700 shadow-lg">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
             <div className="space-y-3">
               <button
                 onClick={handleSave}
@@ -194,20 +194,20 @@ const SettingsPage: React.FC = () => {
           </div>
 
           {/* Account Info */}
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-            <h2 className="text-lg font-semibold text-white mb-4">Account Info</h2>
+          <div className="bg-white/80 backdrop-blur-sm dark:bg-slate-800 rounded-xl p-6 border border-blue-100 dark:border-slate-700 shadow-lg">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Account Info</h2>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-400">User ID:</span>
-                <span className="text-white">{user?.id}</span>
+                <span className="text-gray-600 dark:text-gray-400">User ID:</span>
+                <span className="text-gray-900 dark:text-white">{user?.id}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Role:</span>
-                <span className="text-white">Staff Member</span>
+                <span className="text-gray-600 dark:text-gray-400">Role:</span>
+                <span className="text-gray-900 dark:text-white">Staff Member</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Last Login:</span>
-                <span className="text-white">Today</span>
+                <span className="text-gray-600 dark:text-gray-400">Last Login:</span>
+                <span className="text-gray-900 dark:text-white">Today</span>
               </div>
             </div>
           </div>

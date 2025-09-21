@@ -10,8 +10,8 @@ const AnalyticsPage: React.FC = () => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-slate-800 border border-slate-600 rounded-lg p-3 shadow-lg">
-          <p className="text-gray-300">{`${label}: ${payload[0].value}`}</p>
+        <div className="bg-white/90 dark:bg-slate-800 border border-blue-100 dark:border-slate-600 rounded-lg p-3 shadow-lg backdrop-blur-sm">
+          <p className="text-gray-700 dark:text-gray-300">{`${label}: ${payload[0].value}`}</p>
         </div>
       );
     }
@@ -56,9 +56,9 @@ const AnalyticsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-        <h1 className="text-3xl font-bold text-white mb-2">{t('analytics.title')}</h1>
-        <p className="text-gray-400">
+      <div className="bg-white/80 backdrop-blur-sm dark:bg-slate-800 rounded-xl p-6 border border-blue-100 dark:border-slate-700 shadow-lg">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{t('analytics.title')}</h1>
+        <p className="text-gray-600 dark:text-gray-400">
           Comprehensive insights into civic operations and report management.
         </p>
       </div>
@@ -68,19 +68,19 @@ const AnalyticsPage: React.FC = () => {
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div key={index} className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+            <div key={index} className="bg-white/80 backdrop-blur-sm dark:bg-slate-800 rounded-xl p-6 border border-blue-100 dark:border-slate-700 shadow-lg hover:shadow-xl transition-all">
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 rounded-lg ${stat.bg}`}>
                   <Icon className={`h-6 w-6 ${stat.color}`} />
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-white">{stat.value}</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</div>
                   <div className={`text-sm ${stat.change.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
                     {stat.change}
                   </div>
                 </div>
               </div>
-              <h3 className="text-gray-300 font-medium">{stat.title}</h3>
+              <h3 className="text-gray-700 dark:text-gray-300 font-medium">{stat.title}</h3>
             </div>
           );
         })}
@@ -89,8 +89,8 @@ const AnalyticsPage: React.FC = () => {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Urgency Distribution */}
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-          <h2 className="text-xl font-bold text-white mb-4">{t('analytics.urgencyDistribution')}</h2>
+        <div className="bg-white/80 backdrop-blur-sm dark:bg-slate-800 rounded-xl p-6 border border-blue-100 dark:border-slate-700 shadow-lg">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t('analytics.urgencyDistribution')}</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -101,7 +101,7 @@ const AnalyticsPage: React.FC = () => {
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={(entry: any) => `${entry.name} ${(entry.percent * 100).toFixed(0)}%`}
                 >
                   {analyticsData.urgencyDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
@@ -115,15 +115,15 @@ const AnalyticsPage: React.FC = () => {
             {analyticsData.urgencyDistribution.map((item, index) => (
               <div key={index} className="flex items-center space-x-2">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                <span className="text-sm text-gray-300">{item.name}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{item.name}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Status Distribution */}
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-          <h2 className="text-xl font-bold text-white mb-4">{t('analytics.statusDistribution')}</h2>
+        <div className="bg-white/80 backdrop-blur-sm dark:bg-slate-800 rounded-xl p-6 border border-blue-100 dark:border-slate-700 shadow-lg">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t('analytics.statusDistribution')}</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={analyticsData.statusDistribution}>
@@ -143,8 +143,8 @@ const AnalyticsPage: React.FC = () => {
       </div>
 
       {/* Monthly Trends */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-        <h2 className="text-xl font-bold text-white mb-4">{t('analytics.monthlyTrends')}</h2>
+      <div className="bg-white/80 backdrop-blur-sm dark:bg-slate-800 rounded-xl p-6 border border-blue-100 dark:border-slate-700 shadow-lg">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t('analytics.monthlyTrends')}</h2>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={analyticsData.monthlyData}>
