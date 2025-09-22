@@ -11,6 +11,7 @@ const ReportsPage: React.FC = () => {
   const [reportStatuses, setReportStatuses] = useState<{[key: string]: string}>({});
   const [reportDepartments, setReportDepartments] = useState<{[key: string]: string}>({});
   const [showDepartmentDropdown, setShowDepartmentDropdown] = useState<{[key: string]: boolean}>({});
+  const [dropdownPosition, setDropdownPosition] = useState<{[key: string]: {top: number, left: number}}>({});
   const [showResolvedModal, setShowResolvedModal] = useState<{[key: string]: boolean}>({});
   const [resolvedPhotos, setResolvedPhotos] = useState<{[key: string]: File | null}>({});
   const [animatingReports, setAnimatingReports] = useState<{[key: string]: boolean}>({});
@@ -211,7 +212,18 @@ const ReportsPage: React.FC = () => {
     }));
   };
 
-  const toggleDepartmentDropdown = (reportId: string) => {
+  const toggleDepartmentDropdown = (reportId: string, event?: React.MouseEvent) => {
+    if (event) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      setDropdownPosition(prev => ({
+        ...prev,
+        [reportId]: {
+          top: rect.bottom + window.scrollY + 4,
+          left: rect.right - 256 + window.scrollX // 256px is dropdown width
+        }
+      }));
+    }
+    
     setShowDepartmentDropdown(prev => ({
       ...prev,
       [reportId]: !prev[reportId]
@@ -415,7 +427,7 @@ const ReportsPage: React.FC = () => {
                 {/* Department Assignment Dropdown */}
                 <div className="relative">
                   <button 
-                    onClick={() => toggleDepartmentDropdown(report.id)}
+                    onClick={(e) => toggleDepartmentDropdown(report.id, e)}
                     className={`p-1.5 rounded-lg transition-colors ${
                       reportDepartments[report.id] 
                         ? 'text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-400/10' 
@@ -425,36 +437,6 @@ const ReportsPage: React.FC = () => {
                   >
                     {reportDepartments[report.id] ? <CheckCircle className="h-4 w-4" /> : <Users className="h-4 w-4" />}
                   </button>
-                  
-                  {/* Department Dropdown */}
-                  {showDepartmentDropdown[report.id] && (
-                    <>
-                      {/* Backdrop */}
-                      <div 
-                        className="fixed inset-0 z-10" 
-                        onClick={() => setShowDepartmentDropdown(prev => ({ ...prev, [report.id]: false }))}
-                      />
-                      
-                      {/* Dropdown Menu */}
-                      <div className="absolute right-0 top-8 z-20 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-2 backdrop-blur-none">
-                        <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700">
-                          <p className="text-xs font-medium text-black dark:text-gray-400 uppercase tracking-wider">
-                            Assign to Department
-                          </p>
-                        </div>
-                        {departments.map((dept) => (
-                          <button
-                            key={dept.id}
-                            onClick={() => handleDepartmentAssignment(report.id, dept.id)}
-                            className="w-full flex items-center space-x-3 px-3 py-2 text-left text-black dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-black dark:hover:text-white transition-colors"
-                          >
-                            <span className="text-lg">{dept.icon}</span>
-                            <span className="text-sm">{dept.name}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
                 </div>
               </div>
               
@@ -585,6 +567,51 @@ const ReportsPage: React.FC = () => {
                 >
                   Mark as Resolved
                 </button>
+              </div>
+            </div>
+          </div>
+        );      
+      })}
+      
+      {/* Department Dropdown Portal - Positioned below action button */}
+      {Object.entries(showDepartmentDropdown).map(([reportId, isOpen]) => {
+        if (!isOpen) return null;
+        
+        const position = dropdownPosition[reportId];
+        if (!position) return null;
+        
+        return (
+          <div key={reportId}>
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 z-[100]" 
+              onClick={() => setShowDepartmentDropdown(prev => ({ ...prev, [reportId]: false }))}
+            />
+            
+            {/* Dropdown Menu - Positioned below button */}
+            <div 
+              className="fixed z-[101] w-64 bg-white dark:bg-slate-800 rounded-lg shadow-2xl border-2 border-slate-300 dark:border-slate-600 py-2 max-h-64 overflow-y-auto"
+              style={{
+                top: `${position.top}px`,
+                left: `${position.left}px`
+              }}
+            >
+              <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700">
+                <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
+                  Assign to Department
+                </p>
+              </div>
+              <div className="py-1">
+                {departments.map((dept) => (
+                  <button
+                    key={dept.id}
+                    onClick={() => handleDepartmentAssignment(reportId, dept.id)}
+                    className="w-full flex items-center space-x-3 px-4 py-3 text-left text-gray-900 dark:text-gray-100 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-900 dark:hover:text-white transition-colors border-0 bg-white dark:bg-slate-800"
+                  >
+                    <span className="text-lg flex-shrink-0">{dept.icon}</span>
+                    <span className="text-sm font-medium truncate">{dept.name}</span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>

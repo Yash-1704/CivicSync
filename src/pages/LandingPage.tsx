@@ -1,6 +1,7 @@
 import React from 'react';
 import { FileText, BarChart3, Users, ArrowRight, ChevronRight } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import LandingHero3D from '../components/LandingHero3D';
 import { useLanguage } from '../contexts/LanguageContext';
 import useInView from '../hooks/useInView';
 
@@ -11,8 +12,7 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
   const { t } = useLanguage();
 
-  // in-view hooks for scroll animations
-  const { ref: heroRef, inView: heroInView } = useInView<HTMLDivElement>({ threshold: 0.2 });
+  // in-view hooks for scroll animations (only keeping the ones still used)
   const { ref: statsRef, inView: statsInView } = useInView<HTMLElement>({ threshold: 0.2 });
   const { ref: featuresRef, inView: featuresInView } = useInView<HTMLElement>({ threshold: 0.15 });
   const { ref: howRef, inView: howInView } = useInView<HTMLElement>({ threshold: 0.15 });
@@ -38,54 +38,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-cyan-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 dark:bg-gradient-to-br">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
       <Navbar onLoginClick={onLoginClick} />
       
-      {/* Hero Section */}
-      <section
-        id="home"
-        ref={heroRef}
-        className={`relative pt-20 pb-32 overflow-hidden transition-all duration-700 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
-      >
-        {/* Background Elements */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-50/30 to-cyan-50/30 dark:from-blue-600/20 dark:to-cyan-600/20"></div>
-        <div className="absolute top-20 left-20 w-72 h-72 bg-blue-100/40 dark:bg-blue-600/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-cyan-100/40 dark:bg-cyan-600/10 rounded-full blur-3xl"></div>
-        
-        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
-            {t('landing.hero.title') || "Civic Dashboard"}
-            <br />
-            <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-              {t('landing.hero.subtitle') || "Empowering Local Governance"}
-            </span>
-          </h1>
-          
-          <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-            {t('landing.hero.description') || "A modern platform to streamline government operations and serve communities better."}
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <button
-              onClick={onLoginClick}
-              className="group bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-2xl flex items-center space-x-2"
-            >
-              <span>{t('landing.hero.accessDashboard') || "Access Dashboard"}</span>
-              <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-            </button>
-            
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                const el = document.getElementById('features');
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }}
-              className="group border-2 border-gray-300 hover:border-blue-500 text-gray-700 hover:text-blue-600 dark:border-slate-600 dark:hover:border-cyan-400 dark:text-gray-300 dark:hover:text-cyan-400 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105"
-            >
-              {t('landing.hero.learnMore') || "Learn More"}
-            </button>
-          </div>
-        </div>
+      {/* Hero Section with 3D Animation */}
+      <section id="home" className="relative overflow-hidden">
+        <LandingHero3D onLoginClick={onLoginClick} />
       </section>
       
       {/* About Section */}

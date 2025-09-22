@@ -7,12 +7,13 @@ import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
 import ReportsPage from './pages/ReportsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import CreditsPage from './pages/CreditsPage';
 import SettingsPage from './pages/SettingsPage';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import FloatingThemeToggle from './components/FloatingThemeToggle';
 
-type AppPage = 'landing' | 'auth' | 'dashboard' | 'reports' | 'analytics' | 'settings';
+type AppPage = 'landing' | 'auth' | 'dashboard' | 'reports' | 'analytics' | 'credits' | 'settings';
 
 const AppContent: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<AppPage>('landing');
@@ -22,7 +23,7 @@ const AppContent: React.FC = () => {
     if (!isLoading) {
       if (user && currentPage === 'landing') {
         setCurrentPage('dashboard');
-      } else if (!user && ['dashboard', 'reports', 'analytics', 'settings'].includes(currentPage)) {
+      } else if (!user && ['dashboard', 'reports', 'analytics', 'credits', 'settings'].includes(currentPage)) {
         setCurrentPage('landing');
       }
     }
@@ -62,6 +63,8 @@ const AppContent: React.FC = () => {
         return <ReportsPage />;
       case 'analytics':
         return <AnalyticsPage />;
+      case 'credits':
+        return <CreditsPage />;
       case 'settings':
         return <SettingsPage />;
       default:

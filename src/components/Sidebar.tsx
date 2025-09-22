@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, FileText, BarChart3, Settings, Menu, X } from 'lucide-react';
+import { Home, FileText, BarChart3, Settings, Menu, X, Trophy } from 'lucide-react';
 
 // Assuming useLanguage is in a valid path
 // import { useLanguage } from '../contexts/LanguageContext';
@@ -23,6 +23,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange }) => {
     { id: 'dashboard', label: t('nav.home'), icon: Home },
     { id: 'reports', label: t('nav.reports'), icon: FileText },
     { id: 'analytics', label: t('nav.analytics'), icon: BarChart3 },
+    { id: 'credits', label: 'Credits', icon: Trophy },
     { id: 'settings', label: t('nav.settings'), icon: Settings },
   ];
 
