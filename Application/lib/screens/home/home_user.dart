@@ -5,10 +5,12 @@ import 'package:civicsync/screens/home/my_reports_page.dart';
 import 'package:civicsync/screens/home/notifications_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'add_report_page.dart';
 import 'profile_page.dart';
 import 'menu_drawer.dart';
 import 'search_page.dart';
+import '../../services/theme_service.dart';
 
 class HomeUser extends StatefulWidget {
   const HomeUser({super.key});
@@ -18,11 +20,6 @@ class HomeUser extends StatefulWidget {
 }
 
 class _HomeUserState extends State<HomeUser> {
-  final Color darkA = const Color(0xFF0F172A);
-  final Color darkB = const Color(0xFF312E81);
-  final Color accent = const Color(0xFF3B82F6);
-  final Color accent2 = const Color(0xFF6D28D9);
-
   final List<String> sorts = ['Trending', 'Latest', 'Nearby', 'High'];
   int _selectedSortIndex = 0;
 
@@ -206,7 +203,7 @@ class _HomeUserState extends State<HomeUser> {
             child: CircleAvatar(
               radius: 20,
               backgroundColor: Colors.white,
-              child: Icon(Icons.location_city, color: darkB),
+              child: Icon(Icons.location_city, color: Provider.of<ThemeService>(context).getSecondaryBackgroundColor(context)),
             ),
           ),
           const SizedBox(width: 10),
@@ -265,7 +262,7 @@ class _HomeUserState extends State<HomeUser> {
             label: sorts[idx],
             selected: selected,
             onPressed: () => _onSortSelected(idx),
-            activeGradient: LinearGradient(colors: [accent2, accent]),
+            activeGradient: Provider.of<ThemeService>(context).getAccentGradient(context),
           );
         },
       ),
@@ -273,11 +270,7 @@ class _HomeUserState extends State<HomeUser> {
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [darkA, darkB],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: Provider.of<ThemeService>(context).getBackgroundGradient(context),
       ),
       child: Column(
         children: [
@@ -413,7 +406,7 @@ class _HomeUserState extends State<HomeUser> {
                     ),
                     decoration: BoxDecoration(
                       color: upvoted
-                          ? accent.withOpacity(0.18)
+                          ? Provider.of<ThemeService>(context).getPrimaryAccentColor(context).withOpacity(0.18)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.white.withOpacity(0.04)),
@@ -509,7 +502,7 @@ class _HomeUserState extends State<HomeUser> {
     return Scaffold(
       key: _scaffoldKey, // ADDED
       drawer: MenuDrawer(), // ADDED
-      backgroundColor: darkA,
+      backgroundColor: Provider.of<ThemeService>(context).getPrimaryBackgroundColor(context),
       body: Stack(
         children: [
           Positioned.fill(child: _buildFeed()),
@@ -549,10 +542,11 @@ class CustomBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double barHeight = 56; // Slightly increased to avoid overflow
-    final Color darkA = const Color(0xFF0F172A);
-    final Color darkB = const Color(0xFF312E81);
-    final Color accent = const Color(0xFF3B82F6);
-    final Color accent2 = const Color(0xFF6D28D9);
+    final themeService = Provider.of<ThemeService>(context);
+    final Color darkA = themeService.getPrimaryBackgroundColor(context);
+    final Color darkB = themeService.getSecondaryBackgroundColor(context);
+    final Color accent = themeService.getPrimaryAccentColor(context);
+    final Color accent2 = themeService.getSecondaryAccentColor(context);
 
     return SafeArea(
       top: false,

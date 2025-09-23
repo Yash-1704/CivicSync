@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'signup_page.dart';
 import '../home/home_user.dart';
+import '../../services/theme_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -42,7 +44,11 @@ class _LoginPageState extends State<LoginPage>
     super.dispose();
   }
 
-  Widget _rolePill(String role) {
+  Widget _rolePill(
+    BuildContext context,
+    ThemeService themeService,
+    String role,
+  ) {
     final bool selected = _selectedRole == role;
     return Expanded(
       child: InkWell(
@@ -52,14 +58,18 @@ class _LoginPageState extends State<LoginPage>
           padding: EdgeInsets.symmetric(vertical: 10, horizontal: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            gradient: selected
-                ? LinearGradient(colors: [Color(0xFF6D28D9), Color(0xFF3B82F6)])
-                : null,
-            color: selected ? null : Colors.white.withOpacity(0.03),
+            gradient: selected ? themeService.getAccentGradient(context) : null,
+            color: selected
+                ? null
+                : (Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withOpacity(0.03)
+                      : Colors.grey.withOpacity(0.1)),
             border: Border.all(
               color: selected
                   ? Colors.transparent
-                  : Colors.white.withOpacity(0.03),
+                  : (Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white.withOpacity(0.03)
+                        : Colors.grey.withOpacity(0.3)),
             ),
             boxShadow: selected
                 ? [
@@ -79,7 +89,9 @@ class _LoginPageState extends State<LoginPage>
               Text(
                 role,
                 style: TextStyle(
-                  color: selected ? Colors.white : Colors.white70,
+                  color: selected
+                      ? Colors.white
+                      : themeService.getSecondaryTextColor(context),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -92,301 +104,67 @@ class _LoginPageState extends State<LoginPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF0F172A), Color(0xFF312E81)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ScaleTransition(
-                  scale: _scaleAnim,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Material(
-                        elevation: 6,
-                        shape: CircleBorder(),
-                        child: CircleAvatar(
-                          radius: 40,
-                          backgroundColor: Colors.white,
-                          child: Icon(
-                            Icons.location_city,
-                            size: 36,
-                            color: Color(0xFF312E81),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Scaffold(
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: themeService.getBackgroundGradient(context),
+            ),
+            child: Center(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ScaleTransition(
+                      scale: _scaleAnim,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            'CivicSync',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Report. Track. Resolve.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 36),
-
-                Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 12,
-                  color: Colors.white.withOpacity(0.04),
-                  child: Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            children: [
-                              _rolePill('Citizen'),
-                              SizedBox(width: 10),
-                              _rolePill('Staff'),
-                            ],
-                          ),
-
-                          SizedBox(height: 18),
-
-                          TextFormField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            style: TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: 'Email',
-                              labelStyle: TextStyle(color: Colors.white70),
-                              filled: true,
-                              fillColor: Colors.white.withOpacity(0.02),
-                              prefixIcon: Icon(
-                                Icons.email,
-                                color: Colors.white70,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                vertical: 16,
-                                horizontal: 12,
-                              ),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your email';
-                              }
-                              if (!value.contains('@')) {
-                                return 'Enter a valid email';
-                              }
-                              return null;
-                            },
-                          ),
-
-                          SizedBox(height: 14),
-
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: _obscurePassword,
-                            style: TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                              labelStyle: TextStyle(color: Colors.white70),
-                              filled: true,
-                              fillColor: Colors.white.withOpacity(0.02),
-                              prefixIcon: Icon(
-                                Icons.lock,
-                                color: Colors.white70,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                vertical: 16,
-                                horizontal: 12,
-                              ),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility
-                                      : Icons.visibility_off,
-                                  color: Colors.white70,
-                                ),
-                                onPressed: () => setState(
-                                  () => _obscurePassword = !_obscurePassword,
-                                ),
-                              ),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your password';
-                              }
-                              if (value.length < 6) {
-                                return 'Password must be at least 6 characters';
-                              }
-                              return null;
-                            },
-                          ),
-
-                          SizedBox(height: 12),
-
-                          Row(
-                            children: [
-                              Checkbox(
-                                value: _rememberMe,
-                                onChanged: (val) =>
-                                    setState(() => _rememberMe = val ?? false),
-                                activeColor: Color(0xFF3B82F6),
-                                checkColor: Colors.white,
-                              ),
-                              Text(
-                                'Remember me',
-                                style: TextStyle(color: Colors.white70),
-                              ),
-                              Spacer(),
-                              GestureDetector(
-                                onTap: () {},
-                                child: Text(
-                                  'Forgot?',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          SizedBox(height: 12),
-
-                          SizedBox(
-                            width: double.infinity,
-                            child: Material(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Ink(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Color(0xFF3B82F6),
-                                      Color(0xFF3B82F6),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(12),
-                                  onTap: () {
-                                    if (_formKey.currentState!.validate()) {
-                                      Navigator.pushReplacement(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => HomeUser(),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  child: Container(
-                                    height: 50,
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      'Sign in',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                          Material(
+                            elevation: 6,
+                            shape: CircleBorder(),
+                            child: CircleAvatar(
+                              radius: 40,
+                              backgroundColor:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.white
+                                  : themeService.getSecondaryBackgroundColor(
+                                      context,
                                     ),
-                                  ),
+                              child: Icon(
+                                Icons.location_city,
+                                size: 36,
+                                color: themeService.getSecondaryBackgroundColor(
+                                  context,
                                 ),
                               ),
                             ),
                           ),
-
-                          SizedBox(height: 14),
-
-                          Row(
-                            children: [
-                              Expanded(child: Divider(color: Colors.white24)),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 8),
-                                child: Text(
-                                  'or continue with',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                              Expanded(child: Divider(color: Colors.white24)),
-                            ],
-                          ),
-
-                          SizedBox(height: 12),
-
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _socialButton(
-                                  icon: Icons.g_mobiledata,
-                                  label: 'Google',
-                                  onTap: () {},
-                                ),
-                              ),
-                              SizedBox(width: 12),
-                              Expanded(
-                                child: _socialButton(
-                                  icon: Icons.phone_android,
-                                  label: 'Phone',
-                                  onTap: () {},
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          SizedBox(height: 14),
-
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Don't have an account?",
-                                style: TextStyle(color: Colors.white70),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => SignUpPage(),
+                                'CivicSync',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w700,
+                                  color: themeService.getPrimaryTextColor(
+                                    context,
                                   ),
                                 ),
-                                child: Text(
-                                  'Sign up',
-                                  style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Report. Track. Resolve.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: themeService.getSecondaryTextColor(
+                                    context,
+                                  ),
                                 ),
                               ),
                             ],
@@ -394,23 +172,337 @@ class _LoginPageState extends State<LoginPage>
                         ],
                       ),
                     ),
-                  ),
+                    SizedBox(height: 36),
+
+                    Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 12,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white.withOpacity(0.04)
+                          : Colors.white,
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                children: [
+                                  _rolePill(context, themeService, 'Citizen'),
+                                  SizedBox(width: 10),
+                                  _rolePill(context, themeService, 'Staff'),
+                                ],
+                              ),
+
+                              SizedBox(height: 18),
+
+                              TextFormField(
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                style: TextStyle(
+                                  color: themeService.getPrimaryTextColor(
+                                    context,
+                                  ),
+                                ),
+                                decoration: InputDecoration(
+                                  labelText: 'Email',
+                                  labelStyle: TextStyle(
+                                    color: themeService.getSecondaryTextColor(
+                                      context,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.white.withOpacity(0.02)
+                                      : Colors.grey.withOpacity(0.1),
+                                  prefixIcon: Icon(
+                                    Icons.email,
+                                    color: themeService.getSecondaryTextColor(
+                                      context,
+                                    ),
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    vertical: 16,
+                                    horizontal: 12,
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your email';
+                                  }
+                                  if (!value.contains('@')) {
+                                    return 'Enter a valid email';
+                                  }
+                                  return null;
+                                },
+                              ),
+
+                              SizedBox(height: 14),
+
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: _obscurePassword,
+                                style: TextStyle(
+                                  color: themeService.getPrimaryTextColor(
+                                    context,
+                                  ),
+                                ),
+                                decoration: InputDecoration(
+                                  labelText: 'Password',
+                                  labelStyle: TextStyle(
+                                    color: themeService.getSecondaryTextColor(
+                                      context,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.white.withOpacity(0.02)
+                                      : Colors.grey.withOpacity(0.1),
+                                  prefixIcon: Icon(
+                                    Icons.lock,
+                                    color: themeService.getSecondaryTextColor(
+                                      context,
+                                    ),
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    vertical: 16,
+                                    horizontal: 12,
+                                  ),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility
+                                          : Icons.visibility_off,
+                                      color: themeService.getSecondaryTextColor(
+                                        context,
+                                      ),
+                                    ),
+                                    onPressed: () => setState(
+                                      () =>
+                                          _obscurePassword = !_obscurePassword,
+                                    ),
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your password';
+                                  }
+                                  if (value.length < 6) {
+                                    return 'Password must be at least 6 characters';
+                                  }
+                                  return null;
+                                },
+                              ),
+
+                              SizedBox(height: 12),
+
+                              Row(
+                                children: [
+                                  Checkbox(
+                                    value: _rememberMe,
+                                    onChanged: (val) => setState(
+                                      () => _rememberMe = val ?? false,
+                                    ),
+                                    activeColor: themeService
+                                        .getPrimaryAccentColor(context),
+                                    checkColor: Colors.white,
+                                  ),
+                                  Text(
+                                    'Remember me',
+                                    style: TextStyle(
+                                      color: themeService.getSecondaryTextColor(
+                                        context,
+                                      ),
+                                    ),
+                                  ),
+                                  Spacer(),
+                                  GestureDetector(
+                                    onTap: () {},
+                                    child: Text(
+                                      'Forgot?',
+                                      style: TextStyle(
+                                        color: themeService
+                                            .getSecondaryTextColor(context),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              SizedBox(height: 12),
+
+                              SizedBox(
+                                width: double.infinity,
+                                child: Material(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Ink(
+                                    decoration: BoxDecoration(
+                                      gradient: themeService.getAccentGradient(
+                                        context,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(12),
+                                      onTap: () {
+                                        if (_formKey.currentState!.validate()) {
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => HomeUser(),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      child: Container(
+                                        height: 50,
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          'Sign in',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              SizedBox(height: 14),
+
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Divider(
+                                      color: themeService
+                                          .getSecondaryTextColor(context)
+                                          .withOpacity(0.24),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                    child: Text(
+                                      'or continue with',
+                                      style: TextStyle(
+                                        color: themeService
+                                            .getSecondaryTextColor(context),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Divider(
+                                      color: themeService
+                                          .getSecondaryTextColor(context)
+                                          .withOpacity(0.24),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              SizedBox(height: 12),
+
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _socialButton(
+                                      context: context,
+                                      themeService: themeService,
+                                      icon: Icons.g_mobiledata,
+                                      label: 'Google',
+                                      onTap: () {},
+                                    ),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Expanded(
+                                    child: _socialButton(
+                                      context: context,
+                                      themeService: themeService,
+                                      icon: Icons.g_mobiledata,
+                                      label: 'Phone',
+                                      onTap: () {},
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              SizedBox(height: 14),
+
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    "Don't have an account?",
+                                    style: TextStyle(
+                                      color: themeService.getSecondaryTextColor(
+                                        context,
+                                      ),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => SignUpPage(),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Sign up',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: themeService
+                                            .getPrimaryAccentColor(context),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
   Widget _socialButton({
+    required BuildContext context,
+    required ThemeService themeService,
     required IconData icon,
     required String label,
     required VoidCallback onTap,
   }) {
     return Material(
-      color: Colors.white.withOpacity(0.03),
+      color: Theme.of(context).brightness == Brightness.dark
+          ? Colors.white.withOpacity(0.03)
+          : Colors.grey.withOpacity(0.1),
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -421,9 +513,14 @@ class _LoginPageState extends State<LoginPage>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.white70),
+              Icon(icon, color: themeService.getSecondaryTextColor(context)),
               SizedBox(width: 8),
-              Text(label, style: TextStyle(color: Colors.white70)),
+              Text(
+                label,
+                style: TextStyle(
+                  color: themeService.getSecondaryTextColor(context),
+                ),
+              ),
             ],
           ),
         ),

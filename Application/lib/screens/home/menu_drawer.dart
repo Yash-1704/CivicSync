@@ -1,94 +1,141 @@
 import 'package:flutter/material.dart';
 import 'my_reports_page.dart';
 import 'profile_page.dart';
-// import 'settings_page.dart';
+import 'settings_page.dart';
+import 'package:provider/provider.dart';
+import '/../services/theme_service.dart';
 
 class MenuDrawer extends StatelessWidget {
-  final Color darkA = const Color(0xFF0F172A);
-  final Color darkB = const Color(0xFF312E81);
-
   @override
   Widget build(BuildContext context) {
-    return Drawer(
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [darkA, darkB],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [darkB, darkA]),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.white24,
-                    child: Icon(Icons.person, color: Colors.white, size: 32),
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    "Welcome, User",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return Drawer(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: themeService.getBackgroundGradient(context),
+            ),
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                DrawerHeader(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        themeService.getSecondaryBackgroundColor(context),
+                        themeService.getPrimaryBackgroundColor(context)
+                      ],
                     ),
                   ),
-                  Text(
-                    "user@email.com",
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundColor: themeService.getPrimaryTextColor(context).withOpacity(0.24),
+                        child: Icon(
+                          Icons.person,
+                          color: themeService.getPrimaryTextColor(context),
+                          size: 32,
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        "Welcome, User",
+                        style: TextStyle(
+                          color: themeService.getPrimaryTextColor(context),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        "user@email.com",
+                        style: TextStyle(
+                          color: themeService.getSecondaryTextColor(context),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                _buildDrawerItem(
+                  context,
+                  themeService,
+                  Icons.home,
+                  "Home",
+                  () {
+                    Navigator.pop(context);
+                  },
+                ),
+                _buildDrawerItem(
+                  context,
+                  themeService,
+                  Icons.list_alt,
+                  "My Reports",
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => MyReportsPage()),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context,
+                  themeService,
+                  Icons.person,
+                  "Profile",
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => ProfilePage()),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context,
+                  themeService,
+                  Icons.settings,
+                  "Settings",
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => SettingsPage()),
+                    );
+                  },
+                ),
+                Divider(color: themeService.getSecondaryTextColor(context).withOpacity(0.24)),
+                _buildDrawerItem(
+                  context,
+                  themeService,
+                  Icons.logout,
+                  "Sign Out",
+                  () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Signed out")),
+                    );
+                  },
+                ),
+              ],
             ),
-            _buildDrawerItem(Icons.home, "Home", () {
-              Navigator.pop(context);
-            }),
-            _buildDrawerItem(Icons.list_alt, "My Reports", () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => MyReportsPage()),
-              );
-            }),
-            _buildDrawerItem(Icons.person, "Profile", () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => ProfilePage()),
-              );
-            }),
-            // _buildDrawerItem(Icons.settings, "Settings", () {
-            //   Navigator.push(
-            //     context,
-            //     MaterialPageRoute(builder: (_) => SettingsPage()),
-            //   );
-            // }),
-            const Divider(color: Colors.white24),
-            _buildDrawerItem(Icons.logout, "Sign Out", () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Signed out")),
-              );
-            }),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildDrawerItem(IconData icon, String text, VoidCallback onTap) {
+  Widget _buildDrawerItem(
+    BuildContext context,
+    ThemeService themeService,
+    IconData icon,
+    String text,
+    VoidCallback onTap,
+  ) {
     return ListTile(
-      leading: Icon(icon, color: Colors.white70),
+      leading: Icon(icon, color: themeService.getSecondaryTextColor(context)),
       title: Text(
         text,
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: themeService.getPrimaryTextColor(context)),
       ),
       onTap: onTap,
     );
