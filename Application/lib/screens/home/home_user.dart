@@ -567,20 +567,21 @@ class CustomBottomBar extends StatelessWidget {
           ],
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _buildButton(Icons.home, 'Home', 0, accent, accent2),
-            _buildButton(Icons.map, 'Maps', 1, accent, accent2),
-            _buildButton(
+            Expanded(child: _buildButton(Icons.home, 'Home', 0, accent, accent2)),
+            Expanded(child: _buildButton(Icons.map, 'Maps', 1, accent, accent2)),
+            Expanded(child: _buildButton(
               Icons.add,
               'Add Report',
               2,
               accent,
               accent2,
               emphasize: true,
-            ),
-            _buildButton(Icons.list_alt, 'My Reports', 3, accent, accent2),
-            _buildButton(Icons.person, 'Profile', 4, accent, accent2),
+            )),
+            Expanded(child: _buildButton(Icons.list_alt, 'My Reports', 3, accent, accent2)),
+            Expanded(child: _buildButton(Icons.person, 'Profile', 4, accent, accent2)),
           ],
         ),
       ),
@@ -604,39 +605,43 @@ class CustomBottomBar extends StatelessWidget {
       end: Alignment.bottomRight,
     );
 
-    return GestureDetector(
-      onTap: () => onTap(index),
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            decoration: emphasize
-                ? BoxDecoration(
-                    gradient: buttonGradient,
-                    shape: BoxShape.circle,
-                  )
-                : null,
-            padding: emphasize ? const EdgeInsets.all(6) : EdgeInsets.zero,
-            child: Icon(
-              icon,
-              size: iconSize,
-              color: active ? Colors.white : Colors.white70,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Flexible(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                color: active ? Colors.white : Colors.white70,
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onTap(index),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: double.infinity,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                decoration: emphasize
+                    ? BoxDecoration(
+                        gradient: buttonGradient,
+                        shape: BoxShape.circle,
+                      )
+                    : null,
+                padding: emphasize ? const EdgeInsets.all(6) : EdgeInsets.zero,
+                child: Icon(
+                  icon,
+                  size: iconSize,
+                  color: active ? Colors.white : Colors.white70,
+                ),
               ),
-              overflow: TextOverflow.ellipsis,
-            ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: active ? Colors.white : Colors.white70,
+                ),
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

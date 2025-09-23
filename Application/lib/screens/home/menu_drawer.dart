@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'my_reports_page.dart';
 import 'profile_page.dart';
 import 'settings_page.dart';
+import 'extra/credits_page.dart';
+import 'extra/refer_earn_page.dart';
+import 'extra/terms_conditions.dart';
 import 'package:provider/provider.dart';
 import '/../services/theme_service.dart';
 
@@ -94,12 +97,48 @@ class MenuDrawer extends StatelessWidget {
                 _buildDrawerItem(
                   context,
                   themeService,
+                  Icons.stars,
+                  "Credits",
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CreditsPage()),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context,
+                  themeService,
+                  Icons.people,
+                  "Refer & Earn",
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ReferEarnPage()),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context,
+                  themeService,
                   Icons.settings,
                   "Settings",
                   () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => SettingsPage()),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context,
+                  themeService,
+                  Icons.description_outlined,
+                  "Terms & Conditions",
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const TermsConditionsPage()),
                     );
                   },
                 ),
