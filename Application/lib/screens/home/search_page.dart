@@ -1,3 +1,4 @@
+// lib/pages/search_page.dart
 import 'package:flutter/material.dart';
 
 class SearchPage extends StatefulWidget {
@@ -43,37 +44,46 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final Color darkA = const Color(0xFF0F172A);
-    final Color darkB = const Color(0xFF312E81);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    final scaffoldBg = theme.scaffoldBackgroundColor;
+    final appBarBg = theme.appBarTheme.backgroundColor ?? colorScheme.surface;
+    final cardColor = theme.cardColor ??
+        (theme.brightness == Brightness.dark ? const Color.fromRGBO(255, 255, 255, 0.05) : Colors.white);
 
     final results = demoReports
         .where((r) => r["title"]!.toLowerCase().contains(query.toLowerCase()))
         .toList();
 
     return Scaffold(
-      backgroundColor: darkA,
+      backgroundColor: scaffoldBg == Colors.transparent ? colorScheme.background : scaffoldBg,
       appBar: AppBar(
         title: TextField(
           controller: _controller,
           autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
+          style: theme.textTheme.bodyLarge?.copyWith(color: colorScheme.onSurface) ??
+              TextStyle(color: colorScheme.onSurface),
+          decoration: InputDecoration(
             hintText: "Search reports...",
-            hintStyle: TextStyle(color: Colors.white70),
+            hintStyle: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface.withOpacity(0.6))
+                ?? TextStyle(color: colorScheme.onSurface.withOpacity(0.6)),
             border: InputBorder.none,
           ),
           onChanged: (val) => setState(() => query = val),
         ),
-        backgroundColor: darkB,
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: appBarBg,
+        iconTheme: theme.appBarTheme.iconTheme ?? theme.iconTheme,
+        elevation: 0,
       ),
       body: query.isEmpty
-          ? _buildTags()
+          ? _buildTags(context)
           : results.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                     "No reports found",
-                    style: TextStyle(color: Colors.white70),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface.withOpacity(0.75))
+                        ?? TextStyle(color: colorScheme.onSurface.withOpacity(0.75)),
                   ),
                 )
               : ListView.builder(
@@ -82,16 +92,16 @@ class _SearchPageState extends State<SearchPage> {
                     final report = results[index];
                     return Card(
                       margin: const EdgeInsets.all(12),
-                      color: Colors.white.withOpacity(0.05),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                      color: cardColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       child: ListTile(
                         title: Text(report["title"]!,
-                            style: const TextStyle(color: Colors.white)),
+                            style: theme.textTheme.bodyLarge?.copyWith(color: colorScheme.onSurface) ??
+                                TextStyle(color: colorScheme.onSurface)),
                         subtitle: Text(report["status"]!,
-                            style: const TextStyle(color: Colors.white70)),
-                        leading:
-                            const Icon(Icons.search, color: Colors.white70),
+                            style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface.withOpacity(0.75)) ??
+                                TextStyle(color: colorScheme.onSurface.withOpacity(0.75))),
+                        leading: Icon(Icons.search, color: theme.iconTheme.color?.withOpacity(0.9)),
                       ),
                     );
                   },
@@ -100,7 +110,10 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   /// Builds clickable tags
-  Widget _buildTags() {
+  Widget _buildTags(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Wrap(
@@ -111,16 +124,16 @@ class _SearchPageState extends State<SearchPage> {
             onTap: () => _onTagTap(tag),
             borderRadius: BorderRadius.circular(20),
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white70),
+                border: Border.all(color: colorScheme.onSurface.withOpacity(0.6)),
                 color: Colors.transparent,
               ),
               child: Text(
                 tag,
-                style: const TextStyle(color: Colors.white),
+                style: theme.textTheme.bodyLarge?.copyWith(color: colorScheme.onSurface) ??
+                    TextStyle(color: colorScheme.onSurface),
               ),
             ),
           );

@@ -1,3 +1,4 @@
+// lib/pages/profile_page.dart
 import 'package:flutter/material.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -5,11 +6,21 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    final scaffoldBg = theme.scaffoldBackgroundColor;
+    final appBarBg = theme.appBarTheme.backgroundColor ?? colorScheme.surface;
+    final surface = theme.cardColor ??
+        (theme.brightness == Brightness.dark ? const Color.fromRGBO(255, 255, 255, 0.05) : Colors.white);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), // Dark background
+      backgroundColor: scaffoldBg == Colors.transparent ? colorScheme.background : scaffoldBg,
       appBar: AppBar(
-        title: const Text('Profile'),foregroundColor: Colors.white,
-        backgroundColor: const Color(0xFF312E81), // Accent color matching top app bar
+        title: Text('Profile', style: theme.textTheme.titleLarge),
+        backgroundColor: appBarBg,
+        foregroundColor: theme.appBarTheme.foregroundColor ?? colorScheme.onSurface,
+        elevation: 0,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -19,57 +30,52 @@ class ProfilePage extends StatelessWidget {
             Center(
               child: CircleAvatar(
                 radius: 50,
-                backgroundImage: AssetImage('assets/images/profile.jpg'), // Add a default image in assets
-                backgroundColor: Colors.white24,
+                backgroundImage: const AssetImage('assets/images/profile.jpg'),
+                backgroundColor: surface,
               ),
             ),
             const SizedBox(height: 16),
-            const Center(
+            Center(
               child: Text(
                 'Username',
-                style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                style: theme.textTheme.headlineSmall?.copyWith(fontSize: 24, fontWeight: FontWeight.bold)
+                    ?? TextStyle(color: colorScheme.onSurface, fontSize: 24, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 8),
-            const Center(
+            Center(
               child: Text(
                 'user@example.com',
-                style: TextStyle(color: Colors.white70),
+                style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface.withOpacity(0.8))
+                    ?? TextStyle(color: colorScheme.onSurface.withOpacity(0.8)),
               ),
             ),
             const SizedBox(height: 24),
-            _buildSectionTitle('Account'),
+            _buildSectionTitle(context, 'Account'),
             const SizedBox(height: 8),
-            _buildButton(context, 'Edit Profile', Icons.edit, onPressed: () {
-              // Navigate to edit profile or open form
-            }),
+            _buildButton(context, 'Edit Profile', Icons.edit, onPressed: () {}),
             const SizedBox(height: 12),
-            _buildButton(context, 'Change Password', Icons.lock, onPressed: () {
-              // Navigate to change password page
-            }),
+            _buildButton(context, 'Change Password', Icons.lock, onPressed: () {}),
             const SizedBox(height: 24),
-            _buildSectionTitle('Settings'),
+            _buildSectionTitle(context, 'Settings'),
             const SizedBox(height: 8),
-            _buildButton(context, 'Notification Preferences', Icons.notifications, onPressed: () {
-              // Open notification settings
-            }),
+            _buildButton(context, 'Notification Preferences', Icons.notifications, onPressed: () {}),
             const SizedBox(height: 12),
-            _buildButton(context, 'Privacy Settings', Icons.privacy_tip, onPressed: () {
-              // Open privacy settings
-            }),
+            _buildButton(context, 'Privacy Settings', Icons.privacy_tip, onPressed: () {}),
             const Spacer(),
             Center(
               child: ElevatedButton(
                 onPressed: () {
-                  // Perform logout
-                  Navigator.pop(context); // Example behavior
+                  Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6D28D9), // Purple accent
+                  backgroundColor: colorScheme.secondary,
+                  foregroundColor: colorScheme.onSecondary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 ),
-                child: const Text('Logout', style: TextStyle(color: Colors.white, fontSize: 16)),
+                child: Text('Logout', style: theme.textTheme.bodyLarge?.copyWith(color: colorScheme.onSecondary, fontSize: 16)
+                    ?? TextStyle(color: colorScheme.onSecondary, fontSize: 16)),
               ),
             ),
           ],
@@ -78,28 +84,42 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Text(
       title,
-      style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 14),
+      style: theme.textTheme.labelLarge?.copyWith(
+            color: colorScheme.onSurface.withOpacity(0.75),
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ) ??
+          TextStyle(color: colorScheme.onSurface.withOpacity(0.75), fontWeight: FontWeight.bold, fontSize: 14),
     );
   }
 
   Widget _buildButton(BuildContext context, String label, IconData icon, {required VoidCallback onPressed}) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final tileColor = theme.cardColor ??
+        (theme.brightness == Brightness.dark ? const Color.fromRGBO(255, 255, 255, 0.05) : Colors.white);
+
     return InkWell(
       onTap: onPressed,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: tileColor,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
-            Icon(icon, color: Colors.white70),
+            Icon(icon, color: theme.iconTheme.color?.withOpacity(0.9)),
             const SizedBox(width: 16),
-            Text(label, style: const TextStyle(color: Colors.white70, fontSize: 16)),
+            Text(label,
+                style: theme.textTheme.bodyLarge?.copyWith(color: colorScheme.onSurface.withOpacity(0.9), fontSize: 16)
+                    ?? TextStyle(color: colorScheme.onSurface.withOpacity(0.9), fontSize: 16)),
           ],
         ),
       ),

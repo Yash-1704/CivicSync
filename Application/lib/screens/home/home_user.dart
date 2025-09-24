@@ -179,6 +179,10 @@ class _HomeUserState extends State<HomeUser> {
 
   Widget _buildHeader(BuildContext context) {
     final double topPadding = MediaQuery.of(context).padding.top;
+    final themeService = Provider.of<ThemeService>(context);
+    final primaryText = themeService.getPrimaryTextColor(context);
+    final secondaryText = themeService.getSecondaryTextColor(context);
+    final secondaryBg = themeService.getSecondaryBackgroundColor(context);
 
     Widget toolbar = Container(
       height: _toolbarHeight - 12,
@@ -191,9 +195,9 @@ class _HomeUserState extends State<HomeUser> {
               // ADDED: open the drawer
               _scaffoldKey.currentState?.openDrawer();
             },
-            child: const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Icon(Icons.menu, color: Colors.white),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Icon(Icons.menu, color: primaryText),
             ),
           ),
           const SizedBox(width: 8),
@@ -203,26 +207,26 @@ class _HomeUserState extends State<HomeUser> {
             child: CircleAvatar(
               radius: 20,
               backgroundColor: Colors.white,
-              child: Icon(Icons.location_city, color: Provider.of<ThemeService>(context).getSecondaryBackgroundColor(context)),
+              child: Icon(Icons.location_city, color: secondaryBg),
             ),
           ),
           const SizedBox(width: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
+            children: [
               Text(
                 'CivicSync',
                 style: TextStyle(
                   fontSize: 18,
-                  color: Colors.white,
+                  color: primaryText,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               SizedBox(height: 2),
               Text(
                 'Report. Track. Resolve.',
-                style: TextStyle(color: Colors.white70, fontSize: 11),
+                style: TextStyle(color: secondaryText, fontSize: 11),
               ),
             ],
           ),
@@ -234,7 +238,7 @@ class _HomeUserState extends State<HomeUser> {
                 MaterialPageRoute(builder: (_) => const SearchPage()),
               );
             },
-            icon: const Icon(Icons.search, color: Colors.white),
+            icon: Icon(Icons.search, color: primaryText),
           ),
           IconButton(
             onPressed: () {
@@ -243,7 +247,7 @@ class _HomeUserState extends State<HomeUser> {
                 MaterialPageRoute(builder: (_) => const NotificationsPage()),
               );
             },
-            icon: const Icon(Icons.notifications_none, color: Colors.white),
+            icon: Icon(Icons.notifications_none, color: primaryText),
           ),
         ],
       ),
@@ -287,9 +291,15 @@ class _HomeUserState extends State<HomeUser> {
     final bool upvoted = _upvoted.contains(id);
     final status = post['status'] as String;
     final statusColor = statusColors[status] ?? Colors.white;
+    final theme = Theme.of(context);
+    final themeService = Provider.of<ThemeService>(context);
+    final primaryText = themeService.getPrimaryTextColor(context);
+    final secondaryText = themeService.getSecondaryTextColor(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final divider = theme.dividerColor;
 
     return Card(
-      color: Colors.white.withOpacity(0.03),
+      color: theme.cardColor,
       elevation: 6,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -308,19 +318,19 @@ class _HomeUserState extends State<HomeUser> {
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
                     return Container(
-                      color: Colors.white.withOpacity(0.02),
-                      child: const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                      color: theme.cardColor,
+                      child: Center(
+                        child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(themeService.getPrimaryAccentColor(context))),
                       ),
                     );
                   },
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
-                      color: Colors.white.withOpacity(0.02),
-                      child: const Center(
+                      color: theme.cardColor,
+                      child: Center(
                         child: Icon(
                           Icons.broken_image,
-                          color: Colors.white54,
+                          color: theme.iconTheme.color,
                           size: 48,
                         ),
                       ),
@@ -335,16 +345,16 @@ class _HomeUserState extends State<HomeUser> {
                 Expanded(
                   child: Text(
                     post['title'],
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: theme.textTheme.headlineMedium?.copyWith(
                       fontSize: 16,
+                      color: primaryText,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
                 Text(
                   post['time'],
-                  style: const TextStyle(color: Colors.white70),
+                  style: TextStyle(color: secondaryText),
                 ),
               ],
             ),
@@ -374,8 +384,8 @@ class _HomeUserState extends State<HomeUser> {
                       const SizedBox(width: 8),
                       Text(
                         status,
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        style: TextStyle(
+                          color: secondaryText,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -385,11 +395,11 @@ class _HomeUserState extends State<HomeUser> {
                 const SizedBox(width: 8),
                 OutlinedButton.icon(
                   onPressed: () {},
-                  icon: const Icon(Icons.reply, size: 16),
-                  label: const Text('Reply'),
+                  icon: Icon(Icons.reply, size: 16, color: onSurface),
+                  label: Text('Reply', style: TextStyle(color: onSurface)),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: BorderSide(color: Colors.white.withOpacity(0.06)),
+                    foregroundColor: onSurface,
+                    side: BorderSide(color: divider),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -406,23 +416,23 @@ class _HomeUserState extends State<HomeUser> {
                     ),
                     decoration: BoxDecoration(
                       color: upvoted
-                          ? Provider.of<ThemeService>(context).getPrimaryAccentColor(context).withOpacity(0.18)
+                          ? themeService.getPrimaryAccentColor(context).withOpacity(0.18)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white.withOpacity(0.04)),
+                      border: Border.all(color: divider.withOpacity(0.8)),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           upvoted ? Icons.thumb_up : Icons.thumb_up_outlined,
-                          color: upvoted ? Colors.white : Colors.white70,
+                          color: upvoted ? theme.colorScheme.onPrimary : secondaryText,
                           size: 18,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           '${post['upvotes']}',
                           style: TextStyle(
-                            color: upvoted ? Colors.white : Colors.white70,
+                            color: upvoted ? theme.colorScheme.onPrimary : secondaryText,
                           ),
                         ),
                       ],
@@ -436,13 +446,13 @@ class _HomeUserState extends State<HomeUser> {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: Colors.white24,
-                  child: const Icon(Icons.person, color: Colors.white),
+                  backgroundColor: theme.colorScheme.onSurface.withOpacity(0.12),
+                  child: Icon(Icons.person, color: theme.iconTheme.color),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   post['author'],
-                  style: const TextStyle(color: Colors.white70),
+                  style: TextStyle(color: secondaryText),
                 ),
               ],
             ),
@@ -453,11 +463,16 @@ class _HomeUserState extends State<HomeUser> {
   }
 
   Widget _buildFeed() {
+    final theme = Theme.of(context);
+    final themeService = Provider.of<ThemeService>(context);
+    final textColor = themeService.getSecondaryTextColor(context);
+
     return RefreshIndicator(
       onRefresh: () async {
         _generatePosts();
         _applySort();
       },
+      color: themeService.getPrimaryAccentColor(context),
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.only(bottom: 10, top: 6),
@@ -467,7 +482,7 @@ class _HomeUserState extends State<HomeUser> {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Card(
-                color: Colors.white.withOpacity(0.02),
+                color: Theme.of(context).cardColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -476,7 +491,7 @@ class _HomeUserState extends State<HomeUser> {
                   child: Center(
                     child: Text(
                       'Community Snapshot / Top Hotspot',
-                      style: TextStyle(color: Colors.white70, fontSize: 16),
+                      style: TextStyle(color: textColor, fontSize: 16),
                     ),
                   ),
                 ),
@@ -543,10 +558,12 @@ class CustomBottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final double barHeight = 56; // Slightly increased to avoid overflow
     final themeService = Provider.of<ThemeService>(context);
-    final Color darkA = themeService.getPrimaryBackgroundColor(context);
-    final Color darkB = themeService.getSecondaryBackgroundColor(context);
+    final Color bgA = themeService.getPrimaryBackgroundColor(context);
+    final Color bgB = themeService.getSecondaryBackgroundColor(context);
     final Color accent = themeService.getPrimaryAccentColor(context);
     final Color accent2 = themeService.getSecondaryAccentColor(context);
+    final primaryText = themeService.getPrimaryTextColor(context);
+    final secondaryText = themeService.getSecondaryTextColor(context);
 
     return SafeArea(
       top: false,
@@ -554,13 +571,13 @@ class CustomBottomBar extends StatelessWidget {
         height: barHeight,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [darkA, darkB],
+            colors: [bgA, bgB],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black26,
+              color: Theme.of(context).brightness == Brightness.dark ? Colors.black26 : Colors.black12,
               blurRadius: 4,
               offset: Offset(0, -1),
             ),
@@ -570,18 +587,20 @@ class CustomBottomBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Expanded(child: _buildButton(Icons.home, 'Home', 0, accent, accent2)),
-            Expanded(child: _buildButton(Icons.map, 'Maps', 1, accent, accent2)),
+            Expanded(child: _buildButton(Icons.home, 'Home', 0, accent, accent2, primaryText, secondaryText)),
+            Expanded(child: _buildButton(Icons.map, 'Maps', 1, accent, accent2, primaryText, secondaryText)),
             Expanded(child: _buildButton(
               Icons.add,
               'Add Report',
               2,
               accent,
               accent2,
+              primaryText,
+              secondaryText,
               emphasize: true,
             )),
-            Expanded(child: _buildButton(Icons.list_alt, 'My Reports', 3, accent, accent2)),
-            Expanded(child: _buildButton(Icons.person, 'Profile', 4, accent, accent2)),
+            Expanded(child: _buildButton(Icons.list_alt, 'My Reports', 3, accent, accent2, primaryText, secondaryText)),
+            Expanded(child: _buildButton(Icons.person, 'Profile', 4, accent, accent2, primaryText, secondaryText)),
           ],
         ),
       ),
@@ -593,7 +612,9 @@ class CustomBottomBar extends StatelessWidget {
     String label,
     int index,
     Color accent,
-    Color accent2, {
+    Color accent2,
+    Color primaryText,
+    Color secondaryText, {
     bool emphasize = false,
   }) {
     final bool active = index == currentIndex;
@@ -626,7 +647,7 @@ class CustomBottomBar extends StatelessWidget {
                 child: Icon(
                   icon,
                   size: iconSize,
-                  color: active ? Colors.white : Colors.white70,
+                  color: active ? Colors.white : secondaryText,
                 ),
               ),
               const SizedBox(height: 2),
@@ -634,7 +655,7 @@ class CustomBottomBar extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: 10,
-                  color: active ? Colors.white : Colors.white70,
+                  color: active ? Colors.white : secondaryText,
                 ),
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
@@ -680,6 +701,10 @@ class _AccessibleSortChipState extends State<_AccessibleSortChip> {
   @override
   Widget build(BuildContext context) {
     final selected = widget.selected;
+    final themeService = Provider.of<ThemeService>(context);
+    final primaryText = themeService.getPrimaryTextColor(context);
+    final secondaryText = themeService.getSecondaryTextColor(context);
+
     return FocusableActionDetector(
       onShowFocusHighlight: (f) => setState(() => _focused = f),
       onShowHoverHighlight: (h) => setState(() => _hovering = h),
@@ -707,30 +732,30 @@ class _AccessibleSortChipState extends State<_AccessibleSortChip> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 gradient: selected ? widget.activeGradient : null,
-                color: selected ? null : Colors.white.withOpacity(0.03),
+                color: selected ? null : Theme.of(context).cardColor.withOpacity(0.03),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: selected
                     ? [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.25),
+                          color: Colors.black.withOpacity(0.12),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
                       ]
                     : _focused
-                    ? [BoxShadow(color: Colors.white10, blurRadius: 6)]
-                    : null,
-                border: Border.all(color: Colors.white.withOpacity(0.02)),
+                        ? [BoxShadow(color: Colors.black12, blurRadius: 6)]
+                        : null,
+                border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.6)),
               ),
               child: Row(
                 children: [
                   if (selected)
-                    const Icon(Icons.check, size: 16, color: Colors.white),
+                    Icon(Icons.check, size: 16, color: Colors.white),
                   if (selected) const SizedBox(width: 6),
                   Text(
                     widget.label,
                     style: TextStyle(
-                      color: selected ? Colors.white : Colors.white70,
+                      color: selected ? Colors.white : secondaryText,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -749,19 +774,20 @@ class ReportIssuePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeService = Provider.of<ThemeService>(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Submit Report'),
-        backgroundColor: const Color(0xFF312E81),
+        backgroundColor: themeService.getSecondaryBackgroundColor(context),
       ),
       body: Container(
         padding: const EdgeInsets.all(16),
-        color: const Color(0xFF0F172A),
+        color: themeService.getPrimaryBackgroundColor(context),
         child: Column(
           children: [
-            const Text(
+            Text(
               'Report submission screen (stub). Replace this with your report form: camera, location, category, description.',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: themeService.getSecondaryTextColor(context)),
             ),
             const SizedBox(height: 20),
             ElevatedButton(

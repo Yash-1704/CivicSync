@@ -1,18 +1,17 @@
+// lib/pages/my_reports.dart
 import 'package:flutter/material.dart';
 
 class MyReportsPage extends StatelessWidget {
-  final Color darkA = const Color(0xFF0F172A);
-  final Color darkB = const Color(0xFF312E81);
-  final Color accent = const Color(0xFF3B82F6);
-  final Color accent2 = const Color(0xFF6D28D9);
+  MyReportsPage({super.key});
 
-  final Map<String, Color> statusColors = const {
+  // Status colors (kept as constants for consistency across themes)
+  final Map<String, Color> _statusColors = const {
     "Pending": Color(0xFFF7D154),
     "In Progress": Color(0xFF4DA1FF),
     "Resolved": Color(0xFF3AC47D),
   };
 
-  final List<Map<String, dynamic>> reports = [
+  final List<Map<String, dynamic>> _reports = [
     {
       "title": "Pothole on Main Street",
       "address": "Main St & 5th Ave",
@@ -35,23 +34,42 @@ class MyReportsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    // Respect ThemeData values and only fallback to safe defaults
+    final scaffoldBg = theme.scaffoldBackgroundColor;
+    final appBarBg = theme.appBarTheme.backgroundColor ?? colorScheme.surface;
+
+    // Use Theme's cardColor (recommended) and provide a sensible fallback per brightness
+    final cardColor = theme.cardColor ??
+        (theme.brightness == Brightness.dark
+            ? const Color.fromRGBO(255, 255, 255, 0.03)
+            : Colors.white);
+
     return Scaffold(
-      backgroundColor: darkA,
+      backgroundColor: scaffoldBg == Colors.transparent ? colorScheme.background : scaffoldBg,
       appBar: AppBar(
-        title: const Text("My Reports"),foregroundColor:Colors.white,
-        backgroundColor: darkB,
+        title: Text(
+          "My Reports",
+          style: theme.textTheme.titleLarge,
+        ),
+        backgroundColor: appBarBg,
+        foregroundColor: theme.appBarTheme.foregroundColor ?? colorScheme.onSurface,
         elevation: 0,
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(12),
-        itemCount: reports.length,
+        itemCount: _reports.length,
         itemBuilder: (context, index) {
-          final report = reports[index];
+          final report = _reports[index];
           return _buildReportCard(
+            context,
             report["title"],
             report["address"],
             report["image"],
             report["status"],
+            cardColor,
           );
         },
       ),
@@ -59,16 +77,29 @@ class MyReportsPage extends StatelessWidget {
   }
 
   Widget _buildReportCard(
+    BuildContext context,
     String title,
     String address,
     String imageUrl,
     String status,
+    Color cardColor,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     final int activeStep = _statusToIndex(status);
-    final Color statusColor = statusColors[status] ?? Colors.white70;
+    final Color statusColor = _statusColors[status] ?? colorScheme.onSurface.withOpacity(0.7);
+
+    // Text styles drawn from theme with sensible fallbacks
+    final titleStyle = theme.textTheme.bodyLarge?.copyWith(fontSize: 16, fontWeight: FontWeight.w600) ??
+        TextStyle(color: colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w600);
+    final addressStyle = theme.textTheme.bodyMedium?.copyWith(fontSize: 13) ??
+        TextStyle(color: colorScheme.onSurface.withOpacity(0.7), fontSize: 13);
+    final chipTextStyle = theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600) ??
+        TextStyle(color: colorScheme.onSurface.withOpacity(0.8), fontWeight: FontWeight.w600);
 
     return Card(
-      color: Colors.white.withOpacity(0.03),
+      color: cardColor,
       elevation: 6,
       margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -87,6 +118,11 @@ class MyReportsPage extends StatelessWidget {
                     width: 60,
                     height: 60,
                     fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 60,
+                      height: 60,
+                      color: theme.dividerColor, // theme-aware fallback
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -96,24 +132,17 @@ class MyReportsPage extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: titleStyle,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         address,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                        ),
+                        style: addressStyle,
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.more_vert, color: Colors.white70),
+                Icon(Icons.more_vert, color: theme.iconTheme.color),
               ],
             ),
             const SizedBox(height: 16),
@@ -122,26 +151,21 @@ class MyReportsPage extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildStep("Pending", 0, activeStep, statusColors["Pending"]!),
+                _buildStep(context, "Pending", 0, activeStep, _statusColors["Pending"]!),
                 Expanded(
                   child: Divider(
-                    color: activeStep >= 1
-                        ? statusColors["In Progress"]
-                        : Colors.white24,
+                    color: activeStep >= 1 ? _statusColors["In Progress"] : theme.dividerColor,
                     thickness: 2,
                   ),
                 ),
-                _buildStep(
-                    "In Progress", 1, activeStep, statusColors["In Progress"]!),
+                _buildStep(context, "In Progress", 1, activeStep, _statusColors["In Progress"]!),
                 Expanded(
                   child: Divider(
-                    color: activeStep == 2
-                        ? statusColors["Resolved"]
-                        : Colors.white24,
+                    color: activeStep == 2 ? _statusColors["Resolved"] : theme.dividerColor,
                     thickness: 2,
                   ),
                 ),
-                _buildStep("Resolved", 2, activeStep, statusColors["Resolved"]!),
+                _buildStep(context, "Resolved", 2, activeStep, _statusColors["Resolved"]!),
               ],
             ),
 
@@ -151,8 +175,7 @@ class MyReportsPage extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.18),
                     borderRadius: BorderRadius.circular(12),
@@ -171,10 +194,7 @@ class MyReportsPage extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         status,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: chipTextStyle.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.9)),
                       ),
                     ],
                   ),
@@ -184,13 +204,17 @@ class MyReportsPage extends StatelessWidget {
                   ElevatedButton.icon(
                     onPressed: () {},
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: accent,
+                      backgroundColor: theme.colorScheme.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    icon: const Icon(Icons.rate_review, size: 16),
-                    label: const Text("Review"),
+                    icon: Icon(Icons.rate_review, size: 16, color: theme.colorScheme.onPrimary),
+                    label: Text(
+                      "Review",
+                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onPrimary) ??
+                          TextStyle(color: theme.colorScheme.onPrimary),
+                    ),
                   ),
               ],
             ),
@@ -213,23 +237,25 @@ class MyReportsPage extends StatelessWidget {
     }
   }
 
-  Widget _buildStep(
-      String label, int index, int activeStep, Color activeColor) {
+  Widget _buildStep(BuildContext context, String label, int index, int activeStep, Color activeColor) {
+    final theme = Theme.of(context);
     final bool isActive = index <= activeStep;
+
+    final textColor = isActive ? activeColor : theme.textTheme.bodyMedium?.color?.withOpacity(0.7) ?? theme.colorScheme.onSurface.withOpacity(0.7);
+
     return Column(
       children: [
         CircleAvatar(
           radius: 12,
-          backgroundColor: isActive ? activeColor : Colors.white24,
-          child: Icon(Icons.check,
-              size: 14, color: isActive ? Colors.white : Colors.white38),
+          backgroundColor: isActive ? activeColor : theme.dividerColor,
+          child: Icon(Icons.check, size: 14, color: isActive ? Colors.white : theme.iconTheme.color?.withOpacity(0.6)),
         ),
         const SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(
             fontSize: 12,
-            color: isActive ? activeColor : Colors.white54,
+            color: textColor,
           ),
         )
       ],

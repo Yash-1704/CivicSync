@@ -1,3 +1,4 @@
+// lib/pages/notifications_page.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
@@ -9,9 +10,6 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  final Color darkA = const Color(0xFF0F172A);
-  final Color darkB = const Color(0xFF312E81);
-
   List<Map<String, dynamic>> notifications = [
     {
       "title": "Report Resolved",
@@ -47,10 +45,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   void _showNotificationCard(int index) {
     setState(() {
-      notifications[index]["seen"] = true; // mark as seen immediately
+      notifications[index]["seen"] = true;
     });
 
     final notif = notifications[index];
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final dialogBg = colorScheme.surface;
 
     showDialog(
       context: context,
@@ -59,7 +60,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         return BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
           child: Dialog(
-            backgroundColor: darkA.withOpacity(0.95),
+            backgroundColor: dialogBg, // fully opaque surface (theme-aware)
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -76,36 +77,34 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       height: 180,
                       width: double.infinity,
                       fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        height: 180,
+                        color: theme.dividerColor,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     notif["title"],
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)
+                        ?? TextStyle(color: colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     notif["desc"],
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface.withOpacity(0.85))
+                        ?? TextStyle(color: colorScheme.onSurface.withOpacity(0.85), fontSize: 14),
                   ),
                   const SizedBox(height: 10),
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: (statusColors[notif["status"]] ?? Colors.white)
-                              .withOpacity(0.2),
+                          color: (statusColors[notif["status"]] ?? Colors.white).withOpacity(0.18),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: (statusColors[notif["status"]] ??
-                                    Colors.white)
-                                .withOpacity(0.5),
+                            color: (statusColors[notif["status"]] ?? Colors.white).withOpacity(0.28),
                           ),
                         ),
                         child: Row(
@@ -121,9 +120,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             const SizedBox(width: 6),
                             Text(
                               notif["status"],
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: colorScheme.onSurface,
+                                  ) ??
+                                  TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),
@@ -131,8 +132,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       const Spacer(),
                       Text(
                         notif["time"],
-                        style: const TextStyle(
-                            color: Colors.white54, fontSize: 12),
+                        style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withOpacity(0.7))
+                            ?? TextStyle(color: colorScheme.onSurface.withOpacity(0.7), fontSize: 12),
                       ),
                     ],
                   ),
@@ -141,14 +142,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     alignment: Alignment.centerRight,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: darkB,
-                        foregroundColor: Colors.white,
+                        backgroundColor: theme.appBarTheme.backgroundColor ?? colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                       onPressed: () => Navigator.pop(context),
-                      child: const Text("Close"),
+                      child: Text("Close", style: theme.textTheme.labelLarge?.copyWith(color: colorScheme.onPrimary)),
                     ),
                   ),
                 ],
@@ -162,12 +163,21 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    final scaffoldBg = theme.scaffoldBackgroundColor;
+    final appBarBg = theme.appBarTheme.backgroundColor ?? colorScheme.surface;
+    final cardColor = theme.cardColor ??
+        (theme.brightness == Brightness.dark ? const Color.fromRGBO(255, 255, 255, 0.03) : Colors.white);
+
     return Scaffold(
-      backgroundColor: darkA,
+      backgroundColor: scaffoldBg == Colors.transparent ? colorScheme.background : scaffoldBg,
       appBar: AppBar(
-        title: const Text("Notifications", style: TextStyle(color: Colors.white)),
-        backgroundColor: darkB,
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text("Notifications", style: theme.textTheme.titleLarge),
+        backgroundColor: appBarBg,
+        iconTheme: theme.appBarTheme.iconTheme ?? theme.iconTheme,
+        elevation: 0,
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(12),
@@ -179,7 +189,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               GestureDetector(
                 onTap: () => _showNotificationCard(index),
                 child: Card(
-                  color: Colors.white.withOpacity(0.05),
+                  color: cardColor,
                   margin: const EdgeInsets.symmetric(vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -192,45 +202,58 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         width: 50,
                         height: 50,
                         fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 50,
+                          height: 50,
+                          color: theme.dividerColor,
+                        ),
                       ),
                     ),
                     title: Text(
                       notif["title"],
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)
+                          ?? TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w600),
                     ),
                     subtitle: Text(
                       notif["desc"],
-                      style: const TextStyle(color: Colors.white70),
+                      style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface.withOpacity(0.8))
+                          ?? TextStyle(color: colorScheme.onSurface.withOpacity(0.8)),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     trailing: Text(
                       notif["time"],
-                      style:
-                          const TextStyle(color: Colors.white54, fontSize: 12),
+                      style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurface.withOpacity(0.65))
+                          ?? TextStyle(color: colorScheme.onSurface.withOpacity(0.65), fontSize: 12),
                     ),
                   ),
                 ),
               ),
               if (notif["seen"] == false)
-                Positioned(
+                const Positioned(
                   right: 16,
                   top: 16,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
+                  child: _UnreadDot(),
                 ),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _UnreadDot extends StatelessWidget {
+  const _UnreadDot({super.key});
+  @override
+  Widget build(BuildContext context) {
+    final errorColor = Theme.of(context).colorScheme.error;
+    return Container(
+      width: 10,
+      height: 10,
+      decoration: BoxDecoration(
+        color: errorColor,
+        shape: BoxShape.circle,
       ),
     );
   }
