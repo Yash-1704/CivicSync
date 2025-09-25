@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'my_reports_page.dart';
 import 'profile_page.dart';
 import 'settings_page.dart';
@@ -7,6 +8,7 @@ import 'extra/refer_earn_page.dart';
 import 'extra/terms_conditions.dart';
 import 'package:provider/provider.dart';
 import '/../services/theme_service.dart';
+import '../auth/login_page.dart';
 
 class MenuDrawer extends StatelessWidget {
   @override
@@ -66,81 +68,49 @@ class MenuDrawer extends StatelessWidget {
                   themeService,
                   Icons.home,
                   "Home",
-                  () {
-                    Navigator.pop(context);
-                  },
+                  () => Navigator.pop(context),
                 ),
                 _buildDrawerItem(
                   context,
                   themeService,
                   Icons.list_alt,
                   "My Reports",
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => MyReportsPage()),
-                    );
-                  },
+                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyReportsPage())),
                 ),
                 _buildDrawerItem(
                   context,
                   themeService,
                   Icons.person,
                   "Profile",
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => ProfilePage()),
-                    );
-                  },
+                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfilePage())),
                 ),
                 _buildDrawerItem(
                   context,
                   themeService,
                   Icons.stars,
                   "Credits",
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const CreditsPage()),
-                    );
-                  },
+                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreditsPage())),
                 ),
                 _buildDrawerItem(
                   context,
                   themeService,
                   Icons.people,
                   "Refer & Earn",
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ReferEarnPage()),
-                    );
-                  },
+                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReferEarnPage())),
                 ),
                 _buildDrawerItem(
                   context,
                   themeService,
                   Icons.settings,
                   "Settings",
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => SettingsPage()),
-                    );
-                  },
+                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsPage())),
                 ),
                 _buildDrawerItem(
                   context,
                   themeService,
                   Icons.description_outlined,
                   "Terms & Conditions",
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const TermsConditionsPage()),
-                    );
-                  },
+                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TermsConditionsPage())),
                 ),
                 Divider(color: themeService.getSecondaryTextColor(context).withOpacity(0.24)),
                 _buildDrawerItem(
@@ -148,10 +118,12 @@ class MenuDrawer extends StatelessWidget {
                   themeService,
                   Icons.logout,
                   "Sign Out",
-                  () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Signed out")),
+                  () async {
+                    await FirebaseAuth.instance.signOut();
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginPage()),
+                      (route) => false,
                     );
                   },
                 ),

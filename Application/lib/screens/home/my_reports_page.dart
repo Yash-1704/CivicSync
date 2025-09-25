@@ -1,9 +1,18 @@
 // lib/pages/my_reports.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart'; // <-- added
 
-class MyReportsPage extends StatelessWidget {
-  MyReportsPage({super.key});
 
+class MyReportsPage extends StatefulWidget {
+  const MyReportsPage({super.key});
+
+  @override
+  State<MyReportsPage> createState() => _MyReportsPageState();
+}
+
+class _MyReportsPageState extends State<MyReportsPage> {
   // Status colors (kept as constants for consistency across themes)
   final Map<String, Color> _statusColors = const {
     "Pending": Color(0xFFF7D154),
@@ -11,26 +20,22 @@ class MyReportsPage extends StatelessWidget {
     "Resolved": Color(0xFF3AC47D),
   };
 
-  final List<Map<String, dynamic>> _reports = [
-    {
-      "title": "Pothole on Main Street",
-      "address": "Main St & 5th Ave",
-      "image": "https://picsum.photos/200/200?1",
-      "status": "Pending",
-    },
-    {
-      "title": "Broken Streetlight",
-      "address": "Oak Park, Block 200",
-      "image": "https://picsum.photos/200/200?2",
-      "status": "In Progress",
-    },
-    {
-      "title": "Graffiti on Public Building",
-      "address": "City Hall, North Wall",
-      "image": "https://picsum.photos/200/200?3",
-      "status": "Resolved",
-    },
-  ];
+  Stream<QuerySnapshot<Map<String, dynamic>>>? _reportsStream;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _reportsStream = FirebaseFirestore.instance
+          .collection('reports')
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('createdAt', descending: true)
+          .snapshots();
+    } else {
+      _reportsStream = null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,22 +63,168 @@ class MyReportsPage extends StatelessWidget {
         foregroundColor: theme.appBarTheme.foregroundColor ?? colorScheme.onSurface,
         elevation: 0,
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: _reports.length,
-        itemBuilder: (context, index) {
-          final report = _reports[index];
-          return _buildReportCard(
-            context,
-            report["title"],
-            report["address"],
-            report["image"],
-            report["status"],
-            cardColor,
-          );
-        },
-      ),
+      body: _buildBody(context, cardColor),
     );
+  }
+
+  Widget _buildBody(BuildContext context, Color cardColor) {
+    final theme = Theme.of(context);
+
+    // If user isn't signed in, show a message
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return Center(
+        child: Text(
+          'Please sign in to view your reports.',
+          style: theme.textTheme.titleMedium,
+        ),
+      );
+    }
+
+    if (_reportsStream == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _reportsStream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          // == REPLACED: show friendly UI + button to open Firebase Console index link if present ==
+          final error = snapshot.error;
+          String message = error.toString();
+
+          // Try to extract the console link from the error message (if present).
+          String? consoleUrl;
+          try {
+            final errMsg = (error is FirebaseException) ? (error.message ?? error.toString()) : error.toString();
+            final match = RegExp(r'https?://console\.firebase\.google\.com[^\s]+').firstMatch(errMsg);
+            if (match != null) consoleUrl = match.group(0);
+          } catch (_) {
+            consoleUrl = null;
+          }
+
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'There was an error loading reports.',
+                    style: theme.textTheme.titleMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    message,
+                    style: theme.textTheme.bodySmall,
+                    textAlign: TextAlign.center,
+                    maxLines: 5,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 12),
+                  if (consoleUrl != null)
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final uri = Uri.parse(consoleUrl!);
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        } else {
+                          // fallback: open firebase console root
+                          final root = Uri.parse('https://console.firebase.google.com/');
+                          if (await canLaunchUrl(root)) {
+                            await launchUrl(root, mode: LaunchMode.externalApplication);
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.link),
+                      label: const Text('Open Firebase index URL'),
+                    )
+                  else
+                    ElevatedButton(
+                      onPressed: () async {
+                        final root = Uri.parse('https://console.firebase.google.com/');
+                        if (await canLaunchUrl(root)) {
+                          await launchUrl(root, mode: LaunchMode.externalApplication);
+                        }
+                      },
+                      child: const Text('Open Firebase console'),
+                    ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final docs = snapshot.data?.docs ?? [];
+        if (docs.isEmpty) {
+          return Center(
+            child: Text(
+              'You have not submitted any reports yet.',
+              style: theme.textTheme.titleMedium,
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(12),
+          itemCount: docs.length,
+          itemBuilder: (context, index) {
+            final data = docs[index].data();
+
+            // Safely extract fields with fallbacks
+            final title = (data['description'] as String?) ?? 'Untitled Report';
+            final address = (data['location'] as String?) ?? 'Unknown location';
+
+            String imageUrl = '';
+            try {
+              final images = data['imageUrls'];
+              if (images is List && images.isNotEmpty) {
+                imageUrl = images.first as String;
+              } else if (data['imageUrl'] is String) {
+                imageUrl = data['imageUrl'] as String;
+              }
+            } catch (_) {
+              imageUrl = '';
+            }
+
+            // Firestore stored statuses may be lowercase (e.g. 'pending') — normalize to Title Case
+            String rawStatus = (data['status'] as String?) ?? 'pending';
+            final status = _normalizeStatus(rawStatus);
+
+            return _buildReportCard(
+              context,
+              title,
+              address,
+              imageUrl.isNotEmpty ? imageUrl : 'https://picsum.photos/200/200?random=${index}',
+              status,
+              cardColor,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _normalizeStatus(String s) {
+    final lower = s.toLowerCase();
+    switch (lower) {
+      case 'pending':
+        return 'Pending';
+      case 'in progress':
+      case 'in_progress':
+      case 'inprogress':
+        return 'In Progress';
+      case 'resolved':
+        return 'Resolved';
+      default:
+        // Capitalize first letter
+        if (s.isEmpty) return 'Pending';
+        return s[0].toUpperCase() + s.substring(1);
+    }
   }
 
   Widget _buildReportCard(

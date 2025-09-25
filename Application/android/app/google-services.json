@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "298419835115",
+    "project_id": "civicsync-f6509",
+    "storage_bucket": "civicsync-f6509.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:298419835115:android:cd43dd9f48943fdc802eae",
+        "android_client_info": {
+          "package_name": "com.example.civicsync"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAHV-GhDt_2_WL9032n9RXDF-EDLY5XdOk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

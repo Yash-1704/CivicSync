@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'signup_page.dart';
 import '../home/home_user.dart';
 import '../../services/theme_service.dart';
+import '../../services/auth_service.dart';
+import 'verify_email_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -22,6 +24,9 @@ class _LoginPageState extends State<LoginPage>
 
   late final AnimationController _animController;
   late final Animation<double> _scaleAnim;
+
+  final AuthService _authService = AuthService();
+  bool _loading = false;
 
   @override
   void initState() {
@@ -62,14 +67,14 @@ class _LoginPageState extends State<LoginPage>
             color: selected
                 ? null
                 : (Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white.withOpacity(0.03)
-                      : Colors.grey.withOpacity(0.1)),
+                    ? Colors.white.withOpacity(0.03)
+                    : Colors.grey.withOpacity(0.1)),
             border: Border.all(
               color: selected
                   ? Colors.transparent
                   : (Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white.withOpacity(0.03)
-                        : Colors.grey.withOpacity(0.3)),
+                      ? Colors.white.withOpacity(0.03)
+                      : Colors.grey.withOpacity(0.3)),
             ),
             boxShadow: selected
                 ? [
@@ -102,6 +107,46 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  Future<void> _handleSignIn() async {
+    if (!_formKey.currentState!.validate()) return;
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    setState(() => _loading = true);
+    try {
+      final user = await _authService.signIn(email, password);
+      setState(() => _loading = false);
+      if (user != null) {
+        await user.reload();
+        final fresh = _authService.currentUser;
+        final verified = fresh?.emailVerified ?? false;
+        if (!verified) {
+          // If not verified, navigate to verification page
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => VerifyEmailPage(email: email)),
+          );
+        } else {
+          // Proceed to home
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => HomeUser()),
+          );
+        }
+      } else {
+        _showSnack('Signin failed. Try again.');
+      }
+    } catch (e) {
+      setState(() => _loading = false);
+      _showSnack(e.toString().replaceAll('Exception: ', ''));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeService>(
@@ -129,11 +174,11 @@ class _LoginPageState extends State<LoginPage>
                               radius: 40,
                               backgroundColor:
                                   Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? Colors.white
-                                  : themeService.getSecondaryBackgroundColor(
-                                      context,
-                                    ),
+                                          Brightness.dark
+                                      ? Colors.white
+                                      : themeService.getSecondaryBackgroundColor(
+                                          context,
+                                        ),
                               child: Icon(
                                 Icons.location_city,
                                 size: 36,
@@ -217,9 +262,9 @@ class _LoginPageState extends State<LoginPage>
                                   filled: true,
                                   fillColor:
                                       Theme.of(context).brightness ==
-                                          Brightness.dark
-                                      ? Colors.white.withOpacity(0.02)
-                                      : Colors.grey.withOpacity(0.1),
+                                              Brightness.dark
+                                          ? Colors.white.withOpacity(0.02)
+                                          : Colors.grey.withOpacity(0.1),
                                   prefixIcon: Icon(
                                     Icons.email,
                                     color: themeService.getSecondaryTextColor(
@@ -266,9 +311,9 @@ class _LoginPageState extends State<LoginPage>
                                   filled: true,
                                   fillColor:
                                       Theme.of(context).brightness ==
-                                          Brightness.dark
-                                      ? Colors.white.withOpacity(0.02)
-                                      : Colors.grey.withOpacity(0.1),
+                                              Brightness.dark
+                                          ? Colors.white.withOpacity(0.02)
+                                          : Colors.grey.withOpacity(0.1),
                                   prefixIcon: Icon(
                                     Icons.lock,
                                     color: themeService.getSecondaryTextColor(
@@ -360,26 +405,26 @@ class _LoginPageState extends State<LoginPage>
                                     ),
                                     child: InkWell(
                                       borderRadius: BorderRadius.circular(12),
-                                      onTap: () {
-                                        if (_formKey.currentState!.validate()) {
-                                          Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => HomeUser(),
-                                            ),
-                                          );
-                                        }
-                                      },
+                                      onTap: _loading ? null : _handleSignIn,
                                       child: Container(
                                         height: 50,
                                         alignment: Alignment.center,
-                                        child: Text(
-                                          'Sign in',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
+                                        child: _loading
+                                            ? SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  strokeWidth: 2.2,
+                                                ),
+                                              )
+                                            : Text(
+                                                'Sign in',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
                                       ),
                                     ),
                                   ),

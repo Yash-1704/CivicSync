@@ -1,4 +1,5 @@
 // lib/screens/home/home_user.dart
+import 'dart:async';
 import 'dart:math';
 import 'package:civicsync/screens/home/maps_page.dart';
 import 'package:civicsync/screens/home/my_reports_page.dart';
@@ -12,6 +13,9 @@ import 'menu_drawer.dart';
 import 'search_page.dart';
 import '../../services/theme_service.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 class HomeUser extends StatefulWidget {
   const HomeUser({super.key});
 
@@ -23,8 +27,11 @@ class _HomeUserState extends State<HomeUser> {
   final List<String> sorts = ['Trending', 'Latest', 'Nearby', 'High'];
   int _selectedSortIndex = 0;
 
-  late List<Map<String, dynamic>> _posts;
-  final Set<int> _upvoted = {};
+  // Fetched posts from Firestore
+  List<Map<String, dynamic>> _posts = [];
+
+  // Track report IDs liked by current user (realtime via collectionGroup)
+  final Set<String> _likedReportIds = {};
 
   final List<String> statuses = ['Pending', 'In Progress', 'Resolved'];
   final Map<String, Color> statusColors = {
@@ -46,22 +53,61 @@ class _HomeUserState extends State<HomeUser> {
   DateTime _lastToggleTime = DateTime.fromMillisecondsSinceEpoch(0);
   final Duration _toggleDebounce = const Duration(milliseconds: 200);
 
-  // ADDED: scaffold key for opening the drawer
+  // scaffold key for drawer
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _likesSub;
 
   @override
   void initState() {
     super.initState();
-    _generatePosts();
-    _applySort();
     _scrollController.addListener(_onScroll);
+    _startLikesListener();
   }
 
   @override
   void dispose() {
+    _likesSub?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _startLikesListener() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      // Not signed in — clear likes
+      setState(() => _likedReportIds.clear());
+      return;
+    }
+
+    // Listen to all likes made by this user across reports
+    // Each like doc is expected to contain a 'reportId' field
+    _likesSub = FirebaseFirestore.instance
+        .collectionGroup('likes')
+        .where('userId', isEqualTo: user.uid)
+        .snapshots()
+        .listen((snap) {
+      final newSet = <String>{};
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        final reportId = data['reportId'] as String? ?? (doc.reference.parent.parent?.id);
+        if (reportId != null) newSet.add(reportId);
+      }
+      setState(() => _likedReportIds
+        ..clear()
+        ..addAll(newSet));
+    }, onError: (_) {
+      // ignore listener errors silently — liked set will remain empty if error
+    });
+  }
+
+  // Firestore stream for all reports (everybody)
+  Stream<QuerySnapshot<Map<String, dynamic>>> get _reportsStream {
+    return FirebaseFirestore.instance
+        .collection('reports')
+        .orderBy('createdAt', descending: true)
+        .snapshots();
   }
 
   void _onScroll() {
@@ -86,95 +132,95 @@ class _HomeUserState extends State<HomeUser> {
     _lastOffset = offset.clamp(0.0, double.infinity);
   }
 
-  void _generatePosts() {
-    final rnd = Random();
-    _posts = List.generate(8, (i) {
-      final picId = 100 + i;
-      final status = statuses[rnd.nextInt(statuses.length)];
-      final upvotes = rnd.nextInt(20) + 1;
-      return {
-        'id': i,
-        'title': 'Pothole near Block ${i + 1}',
-        'time': '${(i + 1) * 2}h',
-        'author': 'User ${i + 1}',
-        'upvotes': upvotes,
-        'status': status,
-        'imageUrl': 'https://picsum.photos/id/$picId/800/400',
-        'distanceKm': rnd.nextDouble() * 5,
-        'severity': rnd.nextInt(3),
-      };
-    });
-  }
-
-  void _applySort() {
-    setState(() {
-      switch (_selectedSortIndex) {
-        case 0:
-          _posts.sort((a, b) => b['upvotes'].compareTo(a['upvotes']));
-          break;
-        case 1:
-          _posts.sort((a, b) => b['id'].compareTo(a['id']));
-          break;
-        case 2:
-          _posts.sort((a, b) => a['distanceKm'].compareTo(b['distanceKm']));
-          break;
-        case 3:
-          _posts.sort((a, b) => b['severity'].compareTo(a['severity']));
-          break;
-      }
-    });
+  void _applySortToList(List<Map<String, dynamic>> list) {
+    switch (_selectedSortIndex) {
+      case 0: // Trending -> by upvotes desc
+        list.sort((a, b) => (b['upvotes'] ?? 0).compareTo(a['upvotes'] ?? 0));
+        break;
+      case 1: // Latest -> by createdAt desc
+        list.sort((a, b) {
+          final aTs = a['createdAt'] as Timestamp?;
+          final bTs = b['createdAt'] as Timestamp?;
+          if (aTs != null && bTs != null) return bTs.compareTo(aTs);
+          return 0;
+        });
+        break;
+      case 2: // Nearby -> by distanceKm asc (if missing, push to end)
+        list.sort((a, b) => (a['distanceKm'] ?? double.infinity).compareTo(b['distanceKm'] ?? double.infinity));
+        break;
+      case 3: // High -> severity desc
+        list.sort((a, b) => (b['severity'] ?? 0).compareTo(a['severity'] ?? 0));
+        break;
+    }
   }
 
   void _onSortSelected(int index) {
     if (_selectedSortIndex == index) return;
-    _selectedSortIndex = index;
-    _applySort();
+    setState(() => _selectedSortIndex = index);
   }
 
-  void _toggleUpvote(int postId) {
-    setState(() {
-      final post = _posts.firstWhere((p) => p['id'] == postId);
-      if (_upvoted.contains(postId)) {
-        _upvoted.remove(postId);
-        post['upvotes'] = (post['upvotes'] as int) - 1;
-      } else {
-        _upvoted.add(postId);
-        post['upvotes'] = (post['upvotes'] as int) + 1;
-      }
-    });
+  Future<void> _toggleLike(String reportId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please sign in to like reports.')));
+      return;
+    }
+
+    final uid = user.uid;
+    final reportRef = FirebaseFirestore.instance.collection('reports').doc(reportId);
+    final likeRef = reportRef.collection('likes').doc(uid);
+
+    try {
+      await FirebaseFirestore.instance.runTransaction((tx) async {
+        final likeSnap = await tx.get(likeRef);
+        // Ensure report exists (if it doesn't, abort)
+        final reportSnap = await tx.get(reportRef);
+        if (!reportSnap.exists) {
+          throw Exception('Report not found');
+        }
+
+        if (likeSnap.exists) {
+          // unlike
+          tx.delete(likeRef);
+          tx.update(reportRef, {'upvotes': FieldValue.increment(-1)});
+        } else {
+          // like
+          tx.set(likeRef, {
+            'userId': uid,
+            'reportId': reportId,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+          tx.update(reportRef, {'upvotes': FieldValue.increment(1)});
+        }
+      });
+      // runTransaction succeeded — UI will update via stream listeners
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to toggle like: ${e.toString()}')));
+    }
   }
 
   void _onBottomNavTap(int idx) {
     setState(() => _selectedIndex = idx);
     if (idx == 1) {
       Navigator.push(context, MaterialPageRoute(builder: (_) => MapsPage()));
+      return;
     }
     if (idx == 2) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const AddReportPage()),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AddReportPage()));
+      return;
     }
     if (idx == 3) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => MyReportsPage()),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => MyReportsPage()));
+      return;
     }
     if (idx == 4) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const ProfilePage()),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            ['Home', 'Maps', 'Add Report', 'My Reports', 'Profile'][idx],
-          ),
-        ),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage()));
+      return;
     }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(['Home', 'Maps', 'Add Report', 'My Reports', 'Profile'][idx])),
+    );
   }
 
   Widget _buildHeader(BuildContext context) {
@@ -192,7 +238,6 @@ class _HomeUserState extends State<HomeUser> {
           InkWell(
             borderRadius: BorderRadius.circular(10),
             onTap: () {
-              // ADDED: open the drawer
               _scaffoldKey.currentState?.openDrawer();
             },
             child: Padding(
@@ -223,7 +268,7 @@ class _HomeUserState extends State<HomeUser> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              SizedBox(height: 2),
+              const SizedBox(height: 2),
               Text(
                 'Report. Track. Resolve.',
                 style: TextStyle(color: secondaryText, fontSize: 11),
@@ -233,19 +278,13 @@ class _HomeUserState extends State<HomeUser> {
           const Spacer(),
           IconButton(
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SearchPage()),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchPage()));
             },
             icon: Icon(Icons.search, color: primaryText),
           ),
           IconButton(
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const NotificationsPage()),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage()));
             },
             icon: Icon(Icons.notifications_none, color: primaryText),
           ),
@@ -287,8 +326,8 @@ class _HomeUserState extends State<HomeUser> {
   }
 
   Widget _buildPostCard(Map<String, dynamic> post) {
-    final int id = post['id'] as int;
-    final bool upvoted = _upvoted.contains(id);
+    final String docId = post['docId'] as String;
+    final bool upvoted = _likedReportIds.contains(docId);
     final status = post['status'] as String;
     final statusColor = statusColors[status] ?? Colors.white;
     final theme = Theme.of(context);
@@ -320,7 +359,10 @@ class _HomeUserState extends State<HomeUser> {
                     return Container(
                       color: theme.cardColor,
                       child: Center(
-                        child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(themeService.getPrimaryAccentColor(context))),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(themeService.getPrimaryAccentColor(context)),
+                        ),
                       ),
                     );
                   },
@@ -407,7 +449,7 @@ class _HomeUserState extends State<HomeUser> {
                 ),
                 const Spacer(),
                 InkWell(
-                  onTap: () => _toggleUpvote(id),
+                  onTap: () => _toggleLike(docId),
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -415,9 +457,7 @@ class _HomeUserState extends State<HomeUser> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: upvoted
-                          ? themeService.getPrimaryAccentColor(context).withOpacity(0.18)
-                          : Colors.transparent,
+                      color: upvoted ? themeService.getPrimaryAccentColor(context).withOpacity(0.18) : Colors.transparent,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: divider.withOpacity(0.8)),
                     ),
@@ -430,7 +470,7 @@ class _HomeUserState extends State<HomeUser> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          '${post['upvotes']}',
+                          '${post['upvotes'] ?? 0}',
                           style: TextStyle(
                             color: upvoted ? theme.colorScheme.onPrimary : secondaryText,
                           ),
@@ -469,40 +509,151 @@ class _HomeUserState extends State<HomeUser> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        _generatePosts();
-        _applySort();
+        // Stream is realtime; refresh will just rebuild UI.
+        setState(() {});
+        await Future.delayed(const Duration(milliseconds: 400));
       },
       color: themeService.getPrimaryAccentColor(context),
-      child: ListView.builder(
-        controller: _scrollController,
-        padding: const EdgeInsets.only(bottom: 10, top: 6),
-        itemCount: _posts.length + 1,
-        itemBuilder: (context, idx) {
-          if (idx == 0) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Card(
-                color: Theme.of(context).cardColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: SizedBox(
-                  height: 120,
-                  child: Center(
-                    child: Text(
-                      'Community Snapshot / Top Hotspot',
-                      style: TextStyle(color: textColor, fontSize: 16),
+      child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: _reportsStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting && _posts.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(child: Text('Error loading feed: ${snapshot.error}'));
+          }
+
+          final docs = snapshot.data?.docs ?? [];
+
+          // Build posts list from docs
+          final List<Map<String, dynamic>> posts = [];
+          for (var doc in docs) {
+            final data = doc.data();
+
+            // Title: prefer explicit title, otherwise description
+            final title = (data['title'] as String?)?.trim().isNotEmpty == true
+                ? (data['title'] as String)
+                : (data['description'] as String?) ?? 'Untitled Report';
+
+            // Author: fallbacks used
+            final author = (data['authorName'] as String?) ??
+                (data['author'] as String?) ??
+                (data['createdBy'] as String?) ??
+                'Unknown';
+
+            // Time: createdAt -> format to '2h', '5m', etc.
+            final createdAt = data['createdAt'] as Timestamp?;
+            final time = _formatTimeAgo(createdAt);
+
+            // Upvotes: may not exist in your schema
+            final upvotes = (data['upvotes'] is int)
+                ? data['upvotes'] as int
+                : (data['upvotes'] is double) ? (data['upvotes'] as double).toInt() : 0;
+
+            // Status: normalize
+            final rawStatus = (data['status'] as String?) ?? 'pending';
+            final status = _normalizeStatus(rawStatus);
+
+            // image extraction: prefer imageUrls list, then imageUrl or imageURL
+            String imageUrl = '';
+            try {
+              final images = data['imageUrls'];
+              if (images is List && images.isNotEmpty) {
+                imageUrl = images.first as String;
+              } else if ((data['imageUrl'] as String?)?.isNotEmpty == true) {
+                imageUrl = data['imageUrl'] as String;
+              } else if ((data['imageURL'] as String?)?.isNotEmpty == true) {
+                imageUrl = data['imageURL'] as String;
+              }
+            } catch (_) {
+              imageUrl = '';
+            }
+
+            final distanceKm = (data['distanceKm'] is num) ? (data['distanceKm'] as num).toDouble() : null;
+            final severity = (data['severity'] is int) ? data['severity'] as int : 0;
+
+            posts.add({
+              'docId': doc.id,
+              'title': title,
+              'time': time,
+              'author': author,
+              'upvotes': upvotes,
+              'status': status,
+              'imageUrl': imageUrl.isNotEmpty ? imageUrl : 'https://picsum.photos/seed/${doc.id}/800/400',
+              'distanceKm': distanceKm ?? double.infinity,
+              'severity': severity,
+              'createdAt': createdAt,
+            });
+          }
+
+          // Apply sort chosen by user
+          _applySortToList(posts);
+
+          // keep a local copy for local operations (we still persist likes to backend)
+          _posts = posts;
+
+          return ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.only(bottom: 10, top: 6),
+            itemCount: _posts.length + 1,
+            itemBuilder: (context, idx) {
+              if (idx == 0) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Card(
+                    color: Theme.of(context).cardColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: SizedBox(
+                      height: 120,
+                      child: Center(
+                        child: Text(
+                          'Community Snapshot / Top Hotspot',
+                          style: TextStyle(color: textColor, fontSize: 16),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            );
-          }
-          final post = _posts[idx - 1];
-          return _buildPostCard(post);
+                );
+              }
+              final post = _posts[idx - 1];
+              return _buildPostCard(post);
+            },
+          );
         },
       ),
     );
+  }
+
+  String _formatTimeAgo(Timestamp? ts) {
+    if (ts == null) return 'now';
+    final dt = ts.toDate();
+    final diff = DateTime.now().difference(dt);
+    if (diff.inSeconds < 60) return '${diff.inSeconds}s';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    if (diff.inDays < 7) return '${diff.inDays}d';
+    return '${(diff.inDays / 7).floor()}w';
+  }
+
+  String _normalizeStatus(String s) {
+    final lower = s.toLowerCase();
+    switch (lower) {
+      case 'pending':
+        return 'Pending';
+      case 'in progress':
+      case 'in_progress':
+      case 'inprogress':
+        return 'In Progress';
+      case 'resolved':
+        return 'Resolved';
+      default:
+        if (s.isEmpty) return 'Pending';
+        return s[0].toUpperCase() + s.substring(1);
+    }
   }
 
   @override
@@ -515,8 +666,8 @@ class _HomeUserState extends State<HomeUser> {
         );
 
     return Scaffold(
-      key: _scaffoldKey, // ADDED
-      drawer: MenuDrawer(), // ADDED
+      key: _scaffoldKey,
+      drawer: MenuDrawer(),
       backgroundColor: Provider.of<ThemeService>(context).getPrimaryBackgroundColor(context),
       body: Stack(
         children: [
@@ -545,6 +696,7 @@ class _HomeUserState extends State<HomeUser> {
   }
 }
 
+/// ---------- CustomBottomBar (unchanged logic but kept here full) ----------
 class CustomBottomBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -579,7 +731,7 @@ class CustomBottomBar extends StatelessWidget {
             BoxShadow(
               color: Theme.of(context).brightness == Brightness.dark ? Colors.black26 : Colors.black12,
               blurRadius: 4,
-              offset: Offset(0, -1),
+              offset: const Offset(0, -1),
             ),
           ],
         ),
@@ -668,6 +820,7 @@ class CustomBottomBar extends StatelessWidget {
   }
 }
 
+/// ---------- Accessible Sort Chip (unchanged) ----------
 class _AccessibleSortChip extends StatefulWidget {
   final String label;
   final bool selected;
@@ -749,8 +902,7 @@ class _AccessibleSortChipState extends State<_AccessibleSortChip> {
               ),
               child: Row(
                 children: [
-                  if (selected)
-                    Icon(Icons.check, size: 16, color: Colors.white),
+                  if (selected) Icon(Icons.check, size: 16, color: Colors.white),
                   if (selected) const SizedBox(width: 6),
                   Text(
                     widget.label,
@@ -769,6 +921,7 @@ class _AccessibleSortChipState extends State<_AccessibleSortChip> {
   }
 }
 
+/// ---------- ReportIssuePage (unchanged stub) ----------
 class ReportIssuePage extends StatelessWidget {
   const ReportIssuePage({super.key});
 

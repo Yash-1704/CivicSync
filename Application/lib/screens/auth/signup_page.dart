@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'otp_verification_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/auth_service.dart';
+import 'verify_email_page.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -8,9 +10,10 @@ class SignUpPage extends StatefulWidget {
   _SignUpPageState createState() => _SignUpPageState();
 }
 
-class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateMixin {
+class _SignUpPageState extends State<SignUpPage>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   String _selectedRole = "Citizen";
   bool _obscurePassword = true;
@@ -18,18 +21,23 @@ class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateM
   late final AnimationController _animController;
   late final Animation<double> _scaleAnim;
 
+  final AuthService _authService = AuthService();
+  bool _loading = false;
+
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(vsync: this, duration: Duration(milliseconds: 700));
-    _scaleAnim = Tween(begin: 0.95, end: 1.0).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOutBack));
+    _animController = AnimationController(
+        vsync: this, duration: Duration(milliseconds: 700));
+    _scaleAnim = Tween(begin: 0.95, end: 1.0).animate(
+        CurvedAnimation(parent: _animController, curve: Curves.easeOutBack));
     _animController.forward();
   }
 
   @override
   void dispose() {
     _animController.dispose();
-    _phoneController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -44,22 +52,85 @@ class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateM
           padding: EdgeInsets.symmetric(vertical: 10, horizontal: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            gradient: selected ? LinearGradient(colors: [Color(0xFF6D28D9), Color(0xFF3B82F6)]) : null,
+            gradient: selected
+                ? LinearGradient(colors: [Color(0xFF6D28D9), Color(0xFF3B82F6)])
+                : null,
             color: selected ? null : Colors.white.withOpacity(0.03),
-            border: Border.all(color: selected ? Colors.transparent : Colors.white.withOpacity(0.03)),
-            boxShadow: selected ? [BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 8, offset: Offset(0, 4))] : null,
+            border: Border.all(
+                color: selected ? Colors.transparent : Colors.white.withOpacity(0.03)),
+            boxShadow: selected
+                ? [BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 8, offset: Offset(0, 4))]
+                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (selected) Icon(Icons.check, size: 16, color: Colors.white),
               if (selected) SizedBox(width: 6),
-              Text(role, style: TextStyle(color: selected ? Colors.white : Colors.white70, fontWeight: FontWeight.w600)),
+              Text(role,
+                  style: TextStyle(
+                      color: selected ? Colors.white : Colors.white70,
+                      fontWeight: FontWeight.w600)),
             ],
           ),
         ),
       ),
     );
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _handleCreateAccount() async {
+    if (!_formKey.currentState!.validate()) return;
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    setState(() => _loading = true);
+    try {
+      // Attempt sign up (this normally also signs in the user)
+      final user = await _authService.signUp(email, password, _selectedRole);
+
+      // Defensive: ensure currentUser is available and fresh
+      final auth = FirebaseAuth.instance;
+      User? current = auth.currentUser;
+
+      if (current == null) {
+        // Some platforms/conditions might not have currentUser immediately.
+        // Fallback: try signing in immediately with same credentials.
+        try {
+          final signInResult = await auth.signInWithEmailAndPassword(
+            email: email,
+            password: password,
+          );
+          current = signInResult.user;
+        } catch (e) {
+          // If sign-in fails, let user know they should sign in manually.
+          setState(() => _loading = false);
+          _showSnack('Please sign in to continue (auto sign-in failed).');
+          return;
+        }
+      }
+
+      // Reload to make sure emailVerified status is current
+      await current!.reload();
+
+      setState(() => _loading = false);
+
+      if (user != null) {
+        // Navigate to verification (currentUser is present & reloaded)
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => VerifyEmailPage(email: email)),
+        );
+      } else {
+        _showSnack('Signup failed. Try again.');
+      }
+    } catch (e) {
+      setState(() => _loading = false);
+      _showSnack(e.toString().replaceAll('Exception: ', ''));
+    }
   }
 
   @override
@@ -131,24 +202,23 @@ class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateM
                           SizedBox(height: 18),
 
                           TextFormField(
-                            controller: _phoneController,
-                            keyboardType: TextInputType.phone,
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
                             style: TextStyle(color: Colors.white),
                             decoration: InputDecoration(
-                              labelText: 'Phone number',
+                              labelText: 'Email',
                               labelStyle: TextStyle(color: Colors.white70),
-                              hintText: '+91 98765 43210',
+                              hintText: 'you@example.com',
                               hintStyle: TextStyle(color: Colors.white38),
                               filled: true,
                               fillColor: Colors.white.withOpacity(0.02),
-                              prefixIcon: Icon(Icons.phone, color: Colors.white70),
+                              prefixIcon: Icon(Icons.email, color: Colors.white70),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                               contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                             ),
                             validator: (value) {
-                              if (value == null || value.isEmpty) return 'Please enter your phone number';
-                              final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
-                              if (digits.length < 10) return 'Enter a valid phone number';
+                              if (value == null || value.isEmpty) return 'Please enter your email';
+                              if (!value.contains('@')) return 'Enter a valid email';
                               return null;
                             },
                           ),
@@ -187,25 +257,18 @@ class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateM
                               borderRadius: BorderRadius.circular(12),
                               child: Ink(
                                 decoration: BoxDecoration(
-                                    gradient: LinearGradient(colors: [Color(0xFF6D28D9), Color(0xFF3B82F6)]),
-                                    borderRadius: BorderRadius.circular(12),
+                                  gradient: LinearGradient(colors: [Color(0xFF6D28D9), Color(0xFF3B82F6)]),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(12),
-                                  onTap: () {
-                                    if (_formKey.currentState!.validate()) {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => OtpVerificationPage(phone: _phoneController.text.trim(), role: _selectedRole),
-                                        ),
-                                      );
-                                    }
-                                  },
+                                  onTap: _loading ? null : _handleCreateAccount,
                                   child: Container(
                                     height: 48,
                                     alignment: Alignment.center,
-                                    child: Text('Create account', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                                    child: _loading
+                                        ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2))
+                                        : Text('Create account', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                                   ),
                                 ),
                               ),

@@ -1,5 +1,6 @@
-// lib/pages/profile_page.dart
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../auth/login_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -37,7 +38,7 @@ class ProfilePage extends StatelessWidget {
             const SizedBox(height: 16),
             Center(
               child: Text(
-                'Username',
+                FirebaseAuth.instance.currentUser?.email ?? "Username",
                 style: theme.textTheme.headlineSmall?.copyWith(fontSize: 24, fontWeight: FontWeight.bold)
                     ?? TextStyle(color: colorScheme.onSurface, fontSize: 24, fontWeight: FontWeight.bold),
               ),
@@ -45,7 +46,7 @@ class ProfilePage extends StatelessWidget {
             const SizedBox(height: 8),
             Center(
               child: Text(
-                'user@example.com',
+                FirebaseAuth.instance.currentUser?.email ?? "user@example.com",
                 style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface.withOpacity(0.8))
                     ?? TextStyle(color: colorScheme.onSurface.withOpacity(0.8)),
               ),
@@ -65,8 +66,13 @@ class ProfilePage extends StatelessWidget {
             const Spacer(),
             Center(
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
+                onPressed: () async {
+                  await FirebaseAuth.instance.signOut();
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                    (route) => false,
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.secondary,

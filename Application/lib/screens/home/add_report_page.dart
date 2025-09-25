@@ -7,6 +7,10 @@ import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import '/../services/theme_service.dart';
 
+// NEW: Cloudinary + Report services
+import '../../services/cloudinary_service.dart';
+import '../../services/report_service.dart';
+
 class AddReportPage extends StatefulWidget {
   const AddReportPage({super.key});
 
@@ -37,6 +41,9 @@ class _AddReportPageState extends State<AddReportPage> {
   bool _isRecorderInitialized = false;
   bool _isPlayerInitialized = false;
   bool _isPlaying = false;
+
+  // NEW: submission state
+  bool _isSubmitting = false;
 
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -462,13 +469,19 @@ class _AddReportPageState extends State<AddReportPage> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text(
-                        'Submit Report',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
-                      ),
+                      child: _isSubmitting
+                          ? SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2.0, color: Colors.white),
+                            )
+                          : const Text(
+                              'Submit Report',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
                     ),
                   ),
                 ],
@@ -804,21 +817,102 @@ class _AddReportPageState extends State<AddReportPage> {
     });
   }
 
-  void _submitReport() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Report submitted!')),
-    );
-    _locationController.clear();
-    _descriptionController.clear();
-    _selectedTags.clear();
-    setState(() {
-      _selectedImages.clear();
-      _audioPath = null;
-      _isRecording = false;
-      _isPlaying = false;
-    });
-    if (_isPlaying) {
-      _player?.stopPlayer();
+  // ---------------------------------------------------------------------------
+  // SUBMIT: updated to upload media to Cloudinary, then save report to Firestore
+  // ---------------------------------------------------------------------------
+  Future<void> _submitReport() async {
+    // prevent double submissions
+    if (_isSubmitting) return;
+
+    // basic validation (you can expand this)
+    if (_descriptionController.text.trim().isEmpty || _locationController.text.trim().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please provide description and location')),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Uploading report...')),
+        );
+      }
+
+      final cloud = CloudinaryService();
+      final List<String> uploadedImageUrls = [];
+
+      // Upload each selected image
+      for (final img in _selectedImages) {
+        try {
+          final url = await cloud.uploadImage(img);
+          if (url != null) {
+            uploadedImageUrls.add(url);
+          } else {
+            // Non-fatal: record failed upload, continue
+            print('Warning: image upload returned null for ${img.path}');
+          }
+        } catch (e) {
+          print('Image upload error for ${img.path}: $e');
+        }
+      }
+
+      // Upload audio if present
+      String? audioUrl;
+      if (_audioPath != null) {
+        try {
+          final audioFile = File(_audioPath!);
+          final aUrl = await cloud.uploadAudio(audioFile);
+          if (aUrl != null) {
+            audioUrl = aUrl;
+          } else {
+            print('Warning: audio upload returned null for $_audioPath');
+          }
+        } catch (e) {
+          print('Audio upload error: $e');
+        }
+      }
+
+      // Save report data to Firestore
+      await ReportService().addReport(
+        description: _descriptionController.text.trim(),
+        locationText: _locationController.text.trim(),
+        tags: _selectedTags.toList(),
+        imageUrls: uploadedImageUrls,
+        audioUrl: audioUrl,
+      );
+
+      // success feedback + reset form (keeps UI look identical to original)
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Report submitted successfully!')),
+        );
+      }
+
+      _locationController.clear();
+      _descriptionController.clear();
+      _selectedTags.clear();
+      setState(() {
+        _selectedImages.clear();
+        _audioPath = null;
+        _isRecording = false;
+        _isPlaying = false;
+      });
+      if (_isPlaying) {
+        _player?.stopPlayer();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to submit report: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 }
