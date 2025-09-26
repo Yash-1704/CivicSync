@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, Clock, CheckCircle, AlertTriangle, FileText, BarChart3, Download } from 'lucide-react';
+import { TrendingUp, Clock, CheckCircle, AlertTriangle, FileText, BarChart3, Download, Plus } from 'lucide-react';
 import GoogleMap from '../components/GoogleMap';
 import { analyticsData } from '../data/mockData';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -49,7 +49,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       {/* Welcome Header */}
       <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl p-6 text-white">
         <h1 className="text-3xl font-bold mb-2">
-          {t('dashboard.welcome')}, {user?.name}!
+          {t('dashboard.welcome')}, {user?.displayName || user?.email || 'User'}!
         </h1>
         <p className="text-blue-100">
           Here's what's happening in your civic dashboard today.
@@ -113,7 +113,21 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <button 
+          onClick={() => onNavigate?.('add-report')}
+          className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl p-6 transition-colors cursor-pointer group shadow-lg hover:shadow-xl text-left"
+        >
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+              <Plus className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-white font-semibold">Submit New Report</h3>
+              <p className="text-blue-100 text-sm">Report a civic issue</p>
+            </div>
+          </div>
+        </button>
         <button 
           onClick={() => onNavigate?.('reports')}
           className="bg-white/80 backdrop-blur-sm dark:bg-slate-800 rounded-xl p-6 border border-blue-100 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/50 transition-colors cursor-pointer group shadow-lg hover:shadow-xl text-left"
@@ -152,7 +166,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               pendingReports: analyticsData.pendingReports,
               resolvedReports: analyticsData.resolvedReports,
               exportDate: new Date().toISOString(),
-              generatedBy: user?.name || 'Staff Member'
+              generatedBy: user?.displayName || user?.email || 'Staff Member'
             };
             
             const dataStr = JSON.stringify(exportData, null, 2);

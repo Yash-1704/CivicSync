@@ -1,15 +1,19 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { FirebaseService, UserProfile } from '../services/FirebaseService';
+import { User } from 'firebase/auth';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
+interface AuthUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  role?: string;
 }
 
 interface AuthContextType {
-  user: User | null;
-  login: (email: string, otp: string) => Promise<boolean>;
-  register: (name: string, email: string, otp: string) => Promise<boolean>;
+  user: AuthUser | null;
+  userProfile: UserProfile | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (name: string, email: string, password: string, role: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -25,58 +29,112 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setIsLoading(false);
+    const unsubscribe = FirebaseService.onAuthStateChanged(async (firebaseUser: User | null) => {
+      if (firebaseUser) {
+        const authUser: AuthUser = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+        };
+        setUser(authUser);
+        
+        // Fetch user profile from Firestore
+        const profile = await FirebaseService.getUserProfile(firebaseUser.uid);
+        setUserProfile(profile);
+        if (profile) {
+          authUser.role = profile.role;
+        }
+      } else {
+        setUser(null);
+        setUserProfile(null);
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const login = async (email: string, otp: string): Promise<boolean> => {
-    // Mock OTP validation - accept 123456
-    if (otp === '123456') {
-      const mockUser: User = {
-        id: '1',
-        name: 'Staff Member',
-        email: email
-      };
-      setUser(mockUser);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      return true;
-    }
-    return false;
-  };
-
-  const register = async (name: string, email: string, otp: string): Promise<boolean> => {
-    // Mock OTP validation for signup - accept 123456
-    if (otp === '123456') {
-      const newUser: User = {
-        id: Date.now().toString(),
-        name: name || 'New User',
-        email: email
-      };
-      setUser(newUser);
-      try {
-        localStorage.setItem('user', JSON.stringify(newUser));
-      } catch (e) {
-        // ignore
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      setIsLoading(true);
+      const firebaseUser = await FirebaseService.signIn(email, password);
+      if (firebaseUser) {
+        const authUser: AuthUser = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+        };
+        setUser(authUser);
+        
+        // Fetch user profile
+        const profile = await FirebaseService.getUserProfile(firebaseUser.uid);
+        setUserProfile(profile);
+        if (profile) {
+          authUser.role = profile.role;
+        }
+        
+        return true;
       }
-      return true;
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
     }
-    return false;
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const register = async (name: string, email: string, password: string, role: string = 'citizen'): Promise<boolean> => {
+    try {
+      setIsLoading(true);
+      const firebaseUser = await FirebaseService.signUp(email, password, role);
+      if (firebaseUser) {
+        const authUser: AuthUser = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          role: role
+        };
+        setUser(authUser);
+        
+        // Create user profile
+        const profile: UserProfile = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          displayName: name,
+          role: role,
+          createdAt: new Date()
+        };
+        setUserProfile(profile);
+        
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Registration error:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await FirebaseService.signOut();
+      setUser(null);
+      setUserProfile(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, userProfile, login, register, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

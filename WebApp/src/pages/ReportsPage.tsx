@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
-import { Search, Filter, Eye, Edit, ChevronDown, Download, Users, CheckCircle, Upload, X } from 'lucide-react';
-import { mockReports, Report } from '../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, Eye, Edit, ChevronDown, Download, Users, CheckCircle, Upload, X, Image as ImageIcon, Play, Pause, Calendar, MapPin, Tag } from 'lucide-react';
+import { ReportService, Report } from '../services/ReportService';
+import { CloudinaryService } from '../services/CloudinaryService';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const ReportsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'inProgress' | 'resolved'>('all');
-  const [priorityFilter, setPriorityFilter] = useState<'all' | 'High' | 'Medium' | 'Low'>('all');
+  const [priorityFilter, setPriorityFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [reportStatuses, setReportStatuses] = useState<{[key: string]: string}>({});
   const [reportDepartments, setReportDepartments] = useState<{[key: string]: string}>({});
@@ -15,7 +17,41 @@ const ReportsPage: React.FC = () => {
   const [showResolvedModal, setShowResolvedModal] = useState<{[key: string]: boolean}>({});
   const [resolvedPhotos, setResolvedPhotos] = useState<{[key: string]: File | null}>({});
   const [animatingReports, setAnimatingReports] = useState<{[key: string]: boolean}>({});
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const { t } = useLanguage();
+  const { user } = useAuth();
+
+  // Load reports from Firebase
+  useEffect(() => {
+    const loadReports = async () => {
+      try {
+        setLoading(true);
+        const fetchedReports = await ReportService.getReports();
+        setReports(fetchedReports);
+      } catch (error) {
+        console.error('Error loading reports:', error);
+        setError('Failed to load reports');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadReports();
+  }, []);
+
+  // Real-time updates for reports
+  useEffect(() => {
+    const unsubscribe = ReportService.onReportsChange((updatedReports) => {
+      setReports(updatedReports);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // List of departments
   const departments = [
@@ -27,79 +63,8 @@ const ReportsPage: React.FC = () => {
     { id: 'transport', name: 'Transport Department', icon: '🚌' }
   ];
 
-  // Mock reports data with more realistic content
-  const reportsData = [
-    {
-      id: 'RPT-001',
-      submittedBy: 'Rajesh Kumar',
-      priority: 'High',
-      description: 'Large pothole causing damage to vehicles. Urgent repair needed.',
-      status: 'Pending'
-    },
-    {
-      id: 'RPT-002', 
-      submittedBy: 'Priya Sharma',
-      priority: 'Medium',
-      description: 'Broken streetlight leaving parking area completely dark.',
-      status: 'Pending'
-    },
-    {
-      id: 'RPT-003',
-      submittedBy: 'Amit Patel', 
-      priority: 'Low',
-      description: 'Large tree branch fell and is completely blocking sidewalk.',
-      status: 'Pending'
-    },
-    {
-      id: 'RPT-004',
-      submittedBy: 'Sneha Gupta',
-      priority: 'High', 
-      description: 'Water main leak causing street flooding and traffic issues.',
-      status: 'Pending'
-    },
-    {
-      id: 'RPT-005',
-      submittedBy: 'Vikash Singh',
-      priority: 'Medium',
-      description: 'Traffic light malfunctioning at busy intersection during peak hours.',
-      status: 'Pending'
-    },
-    {
-      id: 'RPT-006',
-      submittedBy: 'Meera Joshi',
-      priority: 'Low',
-      description: 'Garbage bins overflowing in residential area for past 3 days.',
-      status: 'Pending'
-    },
-    {
-      id: 'RPT-007',
-      submittedBy: 'Arjun Reddy',
-      priority: 'High',
-      description: 'Sewer system backup causing health hazard in community center.',
-      status: 'Pending'
-    },
-    {
-      id: 'RPT-008',
-      submittedBy: 'Kavya Nair',
-      priority: 'Medium',
-      description: 'Park playground equipment damaged and unsafe for children.',
-      status: 'Pending'
-    },
-    {
-      id: 'RPT-009',
-      submittedBy: 'Rohit Agarwal',
-      priority: 'Low',
-      description: 'Bus stop shelter roof leaking during rain causing passenger discomfort.',
-      status: 'Pending'
-    },
-    {
-      id: 'RPT-010',
-      submittedBy: 'Deepa Mehta',
-      priority: 'High',
-      description: 'Electric pole fallen after storm blocking main road access.',
-      status: 'Pending'
-    }
-  ];
+  // Mock reports data with more realistic content - REMOVED - now using real Firebase data
+  const reportsData = reports; // Use real reports from Firebase
 
   const getPriorityIcon = (priority: string) => {
     const color = priority === 'High' ? 'text-red-500' : priority === 'Medium' ? 'text-yellow-500' : 'text-green-500';
@@ -123,7 +88,7 @@ const ReportsPage: React.FC = () => {
     }
   };
 
-  const handleStatusChange = (reportId: string, newStatus: string) => {
+  const handleStatusChange = async (reportId: string, newStatus: string) => {
     if (newStatus === 'resolved') {
       // Open the resolved modal instead of directly changing status
       setShowResolvedModal(prev => ({
@@ -131,10 +96,18 @@ const ReportsPage: React.FC = () => {
         [reportId]: true
       }));
     } else {
-      setReportStatuses(prev => ({
-        ...prev,
-        [reportId]: newStatus
-      }));
+      try {
+        // Update in Firebase
+        await ReportService.updateReportStatus(reportId, newStatus);
+        // Update local state for immediate UI feedback
+        setReportStatuses(prev => ({
+          ...prev,
+          [reportId]: newStatus
+        }));
+      } catch (error) {
+        console.error('Error updating report status:', error);
+        // TODO: Show error message to user
+      }
     }
   };
 
@@ -150,38 +123,80 @@ const ReportsPage: React.FC = () => {
     }));
   };
 
-  const handleResolvedSubmit = (reportId: string) => {
+  const openReportModal = (report: Report) => {
+    setSelectedReport(report);
+    setIsModalOpen(true);
+  };
+
+  const closeReportModal = () => {
+    setSelectedReport(null);
+    setIsModalOpen(false);
+    setIsPlayingAudio(false);
+  };
+
+  const toggleAudioPlayback = () => {
+    const audio = document.getElementById('report-audio') as HTMLAudioElement;
+    if (audio) {
+      if (isPlayingAudio) {
+        audio.pause();
+        setIsPlayingAudio(false);
+      } else {
+        audio.play();
+        setIsPlayingAudio(true);
+      }
+    }
+  };
+
+  const handleResolvedSubmit = async (reportId: string) => {
     const photo = resolvedPhotos[reportId];
     if (photo) {
-      // Start slide animation
-      setAnimatingReports(prev => ({
-        ...prev,
-        [reportId]: true
-      }));
-      
-      // After animation delay, update status and move to bottom
-      setTimeout(() => {
-        setReportStatuses(prev => ({
+      try {
+        // Start slide animation
+        setAnimatingReports(prev => ({
           ...prev,
-          [reportId]: 'resolved'
+          [reportId]: true
         }));
         
-        // Reset animation state
+        // Upload photo to Cloudinary
+        const resolvedImageUrl = await CloudinaryService.uploadImage(photo);
+        
+        if (resolvedImageUrl) {
+          // Update in Firebase with resolved status and image
+          await ReportService.resolveReport(reportId, resolvedImageUrl);
+          
+          // After animation delay, update status and move to bottom
+          setTimeout(() => {
+            setReportStatuses(prev => ({
+              ...prev,
+              [reportId]: 'resolved'
+            }));
+            
+            // Reset animation state
+            setAnimatingReports(prev => ({
+              ...prev,
+              [reportId]: false
+            }));
+          }, 500); // Animation duration
+        }
+        
+        // Close modal and reset photo
+        setShowResolvedModal(prev => ({
+          ...prev,
+          [reportId]: false
+        }));
+        setResolvedPhotos(prev => ({
+          ...prev,
+          [reportId]: null
+        }));
+      } catch (error) {
+        console.error('Error resolving report:', error);
+        // Reset animation on error
         setAnimatingReports(prev => ({
           ...prev,
           [reportId]: false
         }));
-      }, 500); // Animation duration
-      
-      // Close modal and reset photo
-      setShowResolvedModal(prev => ({
-        ...prev,
-        [reportId]: false
-      }));
-      setResolvedPhotos(prev => ({
-        ...prev,
-        [reportId]: null
-      }));
+        // TODO: Show error message to user
+      }
     }
   };
 
@@ -192,24 +207,32 @@ const ReportsPage: React.FC = () => {
     }));
   };
 
-  const handleDepartmentAssignment = (reportId: string, departmentId: string) => {
-    // Assign department
-    setReportDepartments(prev => ({
-      ...prev,
-      [reportId]: departmentId
-    }));
-    
-    // Automatically change status to "In Progress"
-    setReportStatuses(prev => ({
-      ...prev,
-      [reportId]: 'inProgress'
-    }));
-    
-    // Close dropdown
-    setShowDepartmentDropdown(prev => ({
-      ...prev,
-      [reportId]: false
-    }));
+  const handleDepartmentAssignment = async (reportId: string, departmentId: string) => {
+    try {
+      // Assign department in Firebase
+      await ReportService.assignDepartment(reportId, departmentId);
+      
+      // Update local state for immediate UI feedback
+      setReportDepartments(prev => ({
+        ...prev,
+        [reportId]: departmentId
+      }));
+      
+      // Automatically change status to "In Progress"
+      setReportStatuses(prev => ({
+        ...prev,
+        [reportId]: 'inProgress'
+      }));
+      
+      // Close dropdown
+      setShowDepartmentDropdown(prev => ({
+        ...prev,
+        [reportId]: false
+      }));
+    } catch (error) {
+      console.error('Error assigning department:', error);
+      // TODO: Show error message to user
+    }
   };
 
   const toggleDepartmentDropdown = (reportId: string, event?: React.MouseEvent) => {
@@ -231,12 +254,14 @@ const ReportsPage: React.FC = () => {
   };
 
   const filteredReports = reportsData.filter(report => {
+    if (!report.id) return false; // Skip reports without ID
+    
     const matchesSearch = report.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          report.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.submittedBy.toLowerCase().includes(searchTerm.toLowerCase());
+                         (report.submittedBy && report.submittedBy.toLowerCase().includes(searchTerm.toLowerCase()));
     
     // Get current status for the report
-    const currentStatus = reportStatuses[report.id] || 'pending';
+    const currentStatus = reportStatuses[report.id] || report.status || 'pending';
     
     // Filter by status
     const matchesStatus = statusFilter === 'all' || currentStatus === statusFilter;
@@ -247,9 +272,11 @@ const ReportsPage: React.FC = () => {
     return matchesSearch && matchesStatus && matchesPriority;
   })
   .sort((a, b) => {
+    if (!a.id || !b.id) return 0; // Handle missing IDs
+    
     // Sort resolved reports to bottom
-    const aStatus = reportStatuses[a.id] || 'pending';
-    const bStatus = reportStatuses[b.id] || 'pending';
+    const aStatus = reportStatuses[a.id] || a.status || 'pending';
+    const bStatus = reportStatuses[b.id] || b.status || 'pending';
     
     // Resolved items go to bottom
     if (aStatus === 'resolved' && bStatus !== 'resolved') return 1;
@@ -265,6 +292,8 @@ const ReportsPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Reports</h1>
+          {loading && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Loading reports...</p>}
+          {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
         </div>
         <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2">
           <Download className="h-4 w-4" />
@@ -305,7 +334,7 @@ const ReportsPage: React.FC = () => {
           <div className="relative">
             <select
               value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value as 'all' | 'High' | 'Medium' | 'Low')}
+              onChange={(e) => setPriorityFilter(e.target.value as 'all' | 'high' | 'medium' | 'low')}
               className="px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-black dark:text-gray-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 min-w-[150px]"
             >
               <option value="all" style={{color: 'black'}}>All Priorities</option>
@@ -334,15 +363,18 @@ const ReportsPage: React.FC = () => {
         <div className="bg-gray-50 dark:bg-slate-900/50 border-b border-gray-200 dark:border-slate-700">
           <div className="grid grid-cols-12 gap-4 px-6 py-4">
             <div className="col-span-2">
+              <span className="text-sm font-medium text-black dark:text-gray-300 uppercase tracking-wider">IMAGE</span>
+            </div>
+            <div className="col-span-2">
               <span className="text-sm font-medium text-black dark:text-gray-300 uppercase tracking-wider">REPORT ID</span>
             </div>
             <div className="col-span-2">
               <span className="text-sm font-medium text-black dark:text-gray-300 uppercase tracking-wider">SUBMITTED BY</span>
             </div>
-            <div className="col-span-2">
+            <div className="col-span-1">
               <span className="text-sm font-medium text-black dark:text-gray-300 uppercase tracking-wider">PRIORITY</span>
             </div>
-            <div className="col-span-3">
+            <div className="col-span-2">
               <span className="text-sm font-medium text-black dark:text-gray-300 uppercase tracking-wider">DESCRIPTION</span>
             </div>
             <div className="col-span-1">
@@ -357,13 +389,15 @@ const ReportsPage: React.FC = () => {
         {/* Table Body */}
         <div className="divide-y divide-gray-200 dark:divide-slate-700">
           {filteredReports.map((report, index) => {
+            if (!report.id) return null; // Skip reports without ID
+            
             const isAnimating = animatingReports[report.id];
-            const currentStatus = reportStatuses[report.id] || 'pending';
+            const currentStatus = reportStatuses[report.id] || report.status || 'pending';
             
             return (
               <div 
                 key={report.id} 
-                className={`grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all duration-500 ${
+                className={`grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all duration-500 cursor-pointer ${
                   isAnimating 
                     ? 'transform translate-x-full opacity-0 bg-green-50 dark:bg-green-900/20' 
                     : 'transform translate-x-0 opacity-100'
@@ -372,7 +406,30 @@ const ReportsPage: React.FC = () => {
                     ? 'bg-green-50 dark:bg-green-900/10 border-l-4 border-green-500' 
                     : ''
                 }`}
+                onClick={() => openReportModal(report)}
               >
+              {/* Report Image */}
+              <div className="col-span-2 flex items-center">
+                {report.imageUrls && report.imageUrls.length > 0 ? (
+                  <div className="relative">
+                    <img 
+                      src={report.imageUrls[0]} 
+                      alt="Report" 
+                      className="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-slate-600"
+                    />
+                    {report.imageUrls.length > 1 && (
+                      <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        +{report.imageUrls.length - 1}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-gray-200 dark:bg-slate-700 flex items-center justify-center">
+                    <ImageIcon className="h-6 w-6 text-gray-400" />
+                  </div>
+                )}
+              </div>
+              
               {/* Report ID */}
               <div className="col-span-2 flex items-center">
                 <span className="text-sm font-mono font-medium text-black dark:text-white">{report.id}</span>
@@ -380,26 +437,37 @@ const ReportsPage: React.FC = () => {
               
               {/* Submitted By */}
               <div className="col-span-2 flex items-center">
-                <span className="text-sm text-black dark:text-white">{report.submittedBy}</span>
+                <span className="text-sm text-black dark:text-white">{report.submittedBy || 'Unknown User'}</span>
               </div>
               
               {/* Priority */}
-              <div className="col-span-2 flex items-center">
-                {getPriorityIcon(report.priority)}
+              <div className="col-span-1 flex items-center">
+                {getPriorityIcon(report.priority || 'low')}
               </div>
               
               {/* Description */}
-              <div className="col-span-3 flex items-center">
+              <div className="col-span-2 flex items-center">
                 <div className="flex flex-col space-y-1">
                   <span className="text-sm text-black dark:text-white line-clamp-1">{report.description}</span>
-                  <button className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-left flex items-center space-x-1">
-                    <span>View Details</span>
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    {report.audioUrl && (
+                      <div className="flex items-center space-x-1 text-xs text-blue-600 dark:text-blue-400">
+                        <Play className="h-3 w-3" />
+                        <span>Audio</span>
+                      </div>
+                    )}
+                    {report.imageUrls && report.imageUrls.length > 0 && (
+                      <div className="flex items-center space-x-1 text-xs text-green-600 dark:text-green-400">
+                        <ImageIcon className="h-3 w-3" />
+                        <span>{report.imageUrls.length}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               
               {/* Actions */}
-              <div className="col-span-1 flex items-center space-x-2">
+              <div className="col-span-1 flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                 {/* Eye Button with Department Info Tooltip */}
                 <div className="relative group">
                   <button className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-400/10 rounded-lg transition-colors">
@@ -408,12 +476,12 @@ const ReportsPage: React.FC = () => {
                   
                   {/* Tooltip */}
                   <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-900 dark:bg-slate-700 text-white px-3 py-2 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-30 pointer-events-none">
-                    {reportDepartments[report.id] ? (
+                    {report.id && reportDepartments[report.id] ? (
                       <>
                         <div className="font-semibold">Assigned to:</div>
                         <div className="flex items-center space-x-2 mt-1">
-                          <span>{departments.find(d => d.id === reportDepartments[report.id])?.icon}</span>
-                          <span>{departments.find(d => d.id === reportDepartments[report.id])?.name}</span>
+                          <span>{departments.find(d => d.id === reportDepartments[report.id!])?.icon}</span>
+                          <span>{departments.find(d => d.id === reportDepartments[report.id!])?.name}</span>
                         </div>
                       </>
                     ) : (
@@ -427,27 +495,27 @@ const ReportsPage: React.FC = () => {
                 {/* Department Assignment Dropdown */}
                 <div className="relative">
                   <button 
-                    onClick={(e) => toggleDepartmentDropdown(report.id, e)}
+                    onClick={(e) => report.id && toggleDepartmentDropdown(report.id, e)}
                     className={`p-1.5 rounded-lg transition-colors ${
-                      reportDepartments[report.id] 
+                      report.id && reportDepartments[report.id] 
                         ? 'text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-400/10' 
                         : 'text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-400/10'
                     }`}
-                    title={reportDepartments[report.id] ? 'Assigned to department' : 'Assign to department'}
+                    title={report.id && reportDepartments[report.id] ? 'Assigned to department' : 'Assign to department'}
                   >
-                    {reportDepartments[report.id] ? <CheckCircle className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                    {report.id && reportDepartments[report.id] ? <CheckCircle className="h-4 w-4" /> : <Users className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
               
               {/* Status */}
-              <div className="col-span-2 flex items-center">
+              <div className="col-span-2 flex items-center" onClick={(e) => e.stopPropagation()}>
                 <div className="relative">
                   <select 
-                    value={reportStatuses[report.id] || 'pending'}
-                    onChange={(e) => handleStatusChange(report.id, e.target.value)}
+                    value={reportStatuses[report.id!] || report.status || 'pending'}
+                    onChange={(e) => report.id && handleStatusChange(report.id, e.target.value)}
                     className={`appearance-none px-3 py-1.5 pr-8 rounded-full text-sm font-medium border cursor-pointer hover:opacity-80 transition-colors ${
-                      getStatusColor(reportStatuses[report.id] || 'pending')
+                      getStatusColor(reportStatuses[report.id!] || report.status || 'pending')
                     }`}
                   >
                     <option value="pending" style={{color: 'black'}}>Pending</option>
@@ -455,15 +523,16 @@ const ReportsPage: React.FC = () => {
                     <option value="resolved" style={{color: 'black'}}>Resolved</option>
                   </select>
                   <ChevronDown className={`absolute right-2 top-1/2 transform -translate-y-1/2 h-3 w-3 pointer-events-none ${
-                    reportStatuses[report.id] === 'resolved' ? 'text-green-600 dark:text-green-400' :
-                    reportStatuses[report.id] === 'inProgress' ? 'text-blue-600 dark:text-blue-400' :
+                    reportStatuses[report.id!] === 'resolved' || report.status === 'resolved' ? 'text-green-600 dark:text-green-400' :
+                    reportStatuses[report.id!] === 'inProgress' || report.status === 'inProgress' ? 'text-blue-600 dark:text-blue-400' :
                     'text-yellow-600 dark:text-yellow-400'
                   }`} />
                 </div>
               </div>
             </div>
             );
-          })}
+          }).filter(Boolean)}
+
         </div>
       </div>
       
@@ -573,6 +642,171 @@ const ReportsPage: React.FC = () => {
         );      
       })}
       
+      {/* Report Detail Modal */}
+      {isModalOpen && selectedReport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            {/* Modal Header */}
+            <div className="bg-blue-600 text-white p-6 rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">Report Details</h2>
+                  <p className="text-blue-100 mt-1">Report ID: {selectedReport.id}</p>
+                </div>
+                <button
+                  onClick={closeReportModal}
+                  className="p-2 hover:bg-blue-700 rounded-lg transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Basic Info Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Report Information</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Submitted:</span>
+                      <span className="text-sm text-gray-900 dark:text-white">
+                        {selectedReport.createdAt ? new Date(selectedReport.createdAt.seconds * 1000).toLocaleDateString() : 'Unknown'}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Users className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Submitted by:</span>
+                      <span className="text-sm text-gray-900 dark:text-white">{selectedReport.submittedBy || 'Unknown'}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <MapPin className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Location:</span>
+                      <span className="text-sm text-gray-900 dark:text-white">{selectedReport.location}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Priority:</span>
+                      {getPriorityIcon(selectedReport.priority || 'low')}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Status:</span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        getStatusColor(selectedReport.status)
+                      }`}>
+                        {selectedReport.status.charAt(0).toUpperCase() + selectedReport.status.slice(1)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Tags</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedReport.tags && selectedReport.tags.length > 0 ? (
+                      selectedReport.tags.map((tag, index) => (
+                        <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                          <Tag className="h-3 w-3 mr-1" />
+                          {tag}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-sm text-gray-500 dark:text-gray-400">No tags</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Description</h3>
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-slate-700 p-4 rounded-lg">
+                  {selectedReport.description}
+                </p>
+              </div>
+
+              {/* Images */}
+              {selectedReport.imageUrls && selectedReport.imageUrls.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Images ({selectedReport.imageUrls.length})</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {selectedReport.imageUrls.map((imageUrl, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={imageUrl}
+                          alt={`Report image ${index + 1}`}
+                          className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-slate-600 group-hover:opacity-90 transition-opacity cursor-pointer"
+                          onClick={() => window.open(imageUrl, '_blank')}
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-lg transition-all flex items-center justify-center">
+                          <Eye className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Audio */}
+              {selectedReport.audioUrl && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Audio Recording</h3>
+                  <div className="bg-gray-50 dark:bg-slate-700 p-4 rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <button
+                        onClick={toggleAudioPlayback}
+                        className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full transition-colors"
+                      >
+                        {isPlayingAudio ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                      </button>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          {isPlayingAudio ? 'Playing audio...' : 'Click to play audio recording'}
+                        </p>
+                        <audio
+                          id="report-audio"
+                          src={selectedReport.audioUrl}
+                          onEnded={() => setIsPlayingAudio(false)}
+                          className="w-full"
+                          controls
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Resolved Image */}
+              {selectedReport.status === 'resolved' && selectedReport.resolvedImageUrl && (
+                <div>
+                  <h3 className="text-lg font-semibold text-green-600 dark:text-green-400 mb-3">Resolution Photo</h3>
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-700">
+                    <img
+                      src={selectedReport.resolvedImageUrl}
+                      alt="Resolution proof"
+                      className="w-full max-w-md h-48 object-cover rounded-lg border border-green-300 dark:border-green-600 cursor-pointer"
+                      onClick={() => window.open(selectedReport.resolvedImageUrl!, '_blank')}
+                    />
+                    <p className="text-sm text-green-700 dark:text-green-300 mt-2">✅ Issue has been resolved</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-gray-50 dark:bg-slate-700 p-6 rounded-b-xl flex justify-end space-x-3">
+              <button
+                onClick={closeReportModal}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-600 hover:bg-gray-50 dark:hover:bg-slate-500 rounded-lg transition-colors border border-gray-300 dark:border-slate-500"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Department Dropdown Portal - Positioned below action button */}
       {Object.entries(showDepartmentDropdown).map(([reportId, isOpen]) => {
         if (!isOpen) return null;

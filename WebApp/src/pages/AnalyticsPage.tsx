@@ -1,11 +1,33 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { TrendingUp, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
-import { analyticsData } from '../data/mockData';
+import { ReportService, AnalyticsData } from '../services/ReportService';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const AnalyticsPage: React.FC = () => {
   const { t } = useLanguage();
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load analytics data from Firebase
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      try {
+        setLoading(true);
+        const data = await ReportService.getAnalyticsData();
+        setAnalyticsData(data);
+      } catch (error) {
+        console.error('Error loading analytics:', error);
+        setError('Failed to load analytics data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAnalytics();
+  }, []);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -17,6 +39,30 @@ const AnalyticsPage: React.FC = () => {
     }
     return null;
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white/80 backdrop-blur-sm dark:bg-slate-800 rounded-xl p-6 border border-blue-100 dark:border-slate-700 shadow-lg">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-64 mb-2"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-96"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !analyticsData) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white/80 backdrop-blur-sm dark:bg-slate-800 rounded-xl p-6 border border-red-100 dark:border-red-700 shadow-lg">
+          <h1 className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">Error Loading Analytics</h1>
+          <p className="text-red-600 dark:text-red-400">{error || 'Failed to load analytics data'}</p>
+        </div>
+      </div>
+    );
+  }
 
   const stats = [
     {
