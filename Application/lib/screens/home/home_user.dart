@@ -207,20 +207,16 @@ class _HomeUserState extends State<HomeUser> {
       return;
     }
     if (idx == 2) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const AddReportPage()));
-      return;
-    }
-    if (idx == 3) {
       Navigator.push(context, MaterialPageRoute(builder: (_) => MyReportsPage()));
       return;
     }
-    if (idx == 4) {
+    if (idx == 3) {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilePage()));
       return;
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(['Home', 'Maps', 'Add Report', 'My Reports', 'Profile'][idx])),
+      SnackBar(content: Text(['Home', 'Maps', 'My Reports', 'Profile'][idx])),
     );
   }
 
@@ -766,18 +762,8 @@ class CustomBottomBar extends StatelessWidget {
           children: [
             Expanded(child: _buildButton(Icons.home, 'Home', 0, accent, accent2, primaryText, secondaryText)),
             Expanded(child: _buildButton(Icons.map, 'Maps', 1, accent, accent2, primaryText, secondaryText)),
-            Expanded(child: _buildButton(
-              Icons.add,
-              'Add Report',
-              2,
-              accent,
-              accent2,
-              primaryText,
-              secondaryText,
-              emphasize: true,
-            )),
-            Expanded(child: _buildButton(Icons.list_alt, 'My Reports', 3, accent, accent2, primaryText, secondaryText)),
-            Expanded(child: _buildButton(Icons.person, 'Profile', 4, accent, accent2, primaryText, secondaryText)),
+            Expanded(child: _buildButton(Icons.list_alt, 'My Reports', 2, accent, accent2, primaryText, secondaryText)),
+            Expanded(child: _buildButton(Icons.person, 'Profile', 3, accent, accent2, primaryText, secondaryText)),
           ],
         ),
       ),

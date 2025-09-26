@@ -113,21 +113,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <button 
-          onClick={() => onNavigate?.('add-report')}
-          className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl p-6 transition-colors cursor-pointer group shadow-lg hover:shadow-xl text-left"
-        >
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
-              <Plus className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h3 className="text-white font-semibold">Submit New Report</h3>
-              <p className="text-blue-100 text-sm">Report a civic issue</p>
-            </div>
-          </div>
-        </button>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <button 
           onClick={() => onNavigate?.('reports')}
           className="bg-white/80 backdrop-blur-sm dark:bg-slate-800 rounded-xl p-6 border border-blue-100 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/50 transition-colors cursor-pointer group shadow-lg hover:shadow-xl text-left"
