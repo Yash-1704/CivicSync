@@ -15,6 +15,7 @@ import '../../services/theme_service.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:just_audio/just_audio.dart'; // audio player
 
 class HomeUser extends StatefulWidget {
   const HomeUser({super.key});
@@ -382,6 +383,14 @@ class _HomeUserState extends State<HomeUser> {
               ),
             ),
             const SizedBox(height: 10),
+
+            // Audio player — only if audioUrl present
+            if (post['audioUrl'] != null && (post['audioUrl'] as String).isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10.0),
+                child: ReportAudioPlayer(audioUrl: post['audioUrl'] as String),
+              ),
+
             Row(
               children: [
                 Expanded(
@@ -571,6 +580,21 @@ class _HomeUserState extends State<HomeUser> {
               imageUrl = '';
             }
 
+            // audio extraction (supports audioUrl, audioURL, or audioUrls list)
+            String audioUrl = '';
+            try {
+              final audios = data['audioUrls'];
+              if (audios is List && audios.isNotEmpty) {
+                audioUrl = audios.first as String;
+              } else if ((data['audioUrl'] as String?)?.isNotEmpty == true) {
+                audioUrl = data['audioUrl'] as String;
+              } else if ((data['audioURL'] as String?)?.isNotEmpty == true) {
+                audioUrl = data['audioURL'] as String;
+              }
+            } catch (_) {
+              audioUrl = '';
+            }
+
             final distanceKm = (data['distanceKm'] is num) ? (data['distanceKm'] as num).toDouble() : null;
             final severity = (data['severity'] is int) ? data['severity'] as int : 0;
 
@@ -582,6 +606,7 @@ class _HomeUserState extends State<HomeUser> {
               'upvotes': upvotes,
               'status': status,
               'imageUrl': imageUrl.isNotEmpty ? imageUrl : 'https://picsum.photos/seed/${doc.id}/800/400',
+              'audioUrl': audioUrl,
               'distanceKm': distanceKm ?? double.infinity,
               'severity': severity,
               'createdAt': createdAt,
@@ -921,7 +946,7 @@ class _AccessibleSortChipState extends State<_AccessibleSortChip> {
   }
 }
 
-/// ---------- ReportIssuePage (unchanged stub) ----------
+///// ---------- ReportIssuePage (unchanged stub) ----------
 class ReportIssuePage extends StatelessWidget {
   const ReportIssuePage({super.key});
 
@@ -950,6 +975,221 @@ class ReportIssuePage extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// ---------- NEW: ReportAudioPlayer (compact, rounded aesthetic) ----------
+class ReportAudioPlayer extends StatefulWidget {
+  final String audioUrl;
+  const ReportAudioPlayer({required this.audioUrl, super.key});
+
+  @override
+  State<ReportAudioPlayer> createState() => _ReportAudioPlayerState();
+}
+
+class _ReportAudioPlayerState extends State<ReportAudioPlayer> {
+  late final AudioPlayer _player;
+  bool _loading = true;
+  bool _loadError = false;
+
+  // seeking state
+  bool _isSeeking = false;
+  double _seekPositionMs = 0.0;
+
+  StreamSubscription<ProcessingState>? _processingSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _player = AudioPlayer();
+    _init();
+  }
+
+  Future<void> _init() async {
+    try {
+      await _player.setUrl(widget.audioUrl);
+
+      // Listen for completion — when completed, pause and reset to 0
+      _processingSub = _player.processingStateStream.listen((processingState) {
+        if (processingState == ProcessingState.completed) {
+          _player.pause();
+          _player.seek(Duration.zero);
+          // ensure UI updates
+          setState(() {});
+        }
+      });
+
+      setState(() {
+        _loading = false;
+        _loadError = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _loadError = true;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _processingSub?.cancel();
+    _player.dispose();
+    super.dispose();
+  }
+
+  String _format(Duration d) {
+    final mm = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final ss = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$mm:$ss';
+  }
+
+  Future<void> _handlePlayPause() async {
+    final playing = _player.playing;
+    final duration = _player.duration ?? Duration.zero;
+    final pos = _player.position;
+
+    if (playing) {
+      // Pause and reset to 0:00 as requested
+      await _player.pause();
+      await _player.seek(Duration.zero);
+      setState(() {});
+      return;
+    }
+
+    // If we are at end, reset before play
+    if (duration != Duration.zero && pos >= duration) {
+      await _player.seek(Duration.zero);
+    }
+    await _player.play();
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    // compact dimensions
+    const double iconSize = 28;
+    const double containerVerticalPadding = 6;
+    const double containerHorizontalPadding = 8;
+    const double borderRadius = 14.0;
+
+    if (_loading) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: containerHorizontalPadding, vertical: containerVerticalPadding),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(width: 32, height: 32, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
+            const SizedBox(width: 10),
+            Text('Loading audio...', style: TextStyle(color: theme.textTheme.bodySmall?.color)),
+          ],
+        ),
+      );
+    }
+
+    if (_loadError) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: containerHorizontalPadding, vertical: containerVerticalPadding),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, color: theme.colorScheme.error, size: 20),
+            const SizedBox(width: 8),
+            Text('Failed to load audio', style: TextStyle(color: theme.textTheme.bodySmall?.color)),
+          ],
+        ),
+      );
+    }
+
+    return StreamBuilder<Duration?>(
+      stream: _player.durationStream,
+      builder: (context, durSnap) {
+        final duration = durSnap.data ?? Duration.zero;
+        final durMs = duration.inMilliseconds.toDouble().clamp(0.0, double.infinity);
+
+        return StreamBuilder<Duration>(
+          stream: _player.positionStream,
+          builder: (context, posSnap) {
+            final position = posSnap.data ?? Duration.zero;
+            final effectivePositionMs = _isSeeking ? _seekPositionMs : position.inMilliseconds.toDouble();
+
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: containerHorizontalPadding, vertical: containerVerticalPadding),
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(borderRadius),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    iconSize: iconSize,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    icon: Icon(_player.playing ? Icons.pause_circle_filled : Icons.play_circle_filled),
+                    onPressed: _handlePlayPause,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Slim slider
+                        SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            trackHeight: 2,
+                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                            overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                            thumbColor: theme.colorScheme.primary,
+                            activeTrackColor: theme.colorScheme.primary,
+                          ),
+                          child: Slider(
+                            min: 0,
+                            max: durMs > 0 ? durMs : 1,
+                            value: effectivePositionMs.clamp(0.0, durMs > 0 ? durMs : 1),
+                            onChangeStart: (_) {
+                              setState(() => _isSeeking = true);
+                            },
+                            onChanged: (v) {
+                              setState(() => _seekPositionMs = v);
+                            },
+                            onChangeEnd: (v) async {
+                              final seekTo = Duration(milliseconds: v.round());
+                              await _player.seek(seekTo);
+                              setState(() {
+                                _isSeeking = false;
+                                _seekPositionMs = 0.0;
+                              });
+                            },
+                          ),
+                        ),
+                        // tiny timestamps
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(_format(Duration(milliseconds: effectivePositionMs.round())), style: TextStyle(fontSize: 11, color: theme.textTheme.bodySmall?.color)),
+                            Text(_format(duration), style: TextStyle(fontSize: 11, color: theme.textTheme.bodySmall?.color)),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
